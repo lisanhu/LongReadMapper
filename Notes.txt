@@ -1,0 +1,51 @@
+CMakeLists.txt
+    In order to add custom library path to CMake (like zlib),
+    set environment variable CMAKE_PREFIX_PATH to the folder,
+    where you have installed the libraries
+
+*.mta
+	meta info for the db
+	each record is represented as (seq_name, offset, seq_length)
+	seq_name is serialized as mstring data structure with length first, then
+	contents
+
+*.cat
+	convert Ns to randomly selected ACGT as seqs (seq string)
+	output seqs
+	output reverse complementary of seqs
+	Note: use another random step in reverse complementary step might lead to
+	better randomness, (need to consider and prove)
+	put an '$' in the end.
+
+*.mfi
+	my fm-index aux file, combination of cc, oo, bwt, need to think and implement
+	Current format:
+	CC [256 x uint64]
+	OO [o_ratio int, o_len uint64, OO o_len x uint64]
+	bwt [len uint64, bwt len x char]
+
+*.sa5
+	sa using 5 bytes data structure for serialization. Created by pSAscan.
+	The ui40_t data structure in sa_use may not be always compatible with .sa5, need further investigate
+	pSAscan cannot load gzfile directly, could be further improved by our own library
+
+fmidx/fmidx.c:_bwt_from_sa5
+	could be in 2 cases: ram_use < 2n or ram_use >= 2n.
+	First case is the same with current approach (use a buffer)
+	Second case could be improved by loading the file directly into memory.
+	n here means the length of the prefix file
+
+
+lchash/fmindex bug
+	currently the C table is built to distinguish 'a' and 'A', however, this might lead to inconsistent behaviours. Need to fix later. Currently only support all small case in db. Controlled with the _seq_from_num function
+
+Current problem:
+	Only first iteration has output
+	Need to find a good threshold for uninformative seeds
+	Some of the reads are locating at 0 (all uninformative seeds)
+
+Known issues:
+	Nov 12:
+		using khash instead of a vector
+		the key stored in histo is the original location (bucketing)
+		need to improve sensitivity

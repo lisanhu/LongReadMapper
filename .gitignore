@@ -1,0 +1,8 @@
+.idea/
+cmake-build-debug/
+cmake-build-release/
+build/
+run*/
+build*/
+run-tmp
+data/
