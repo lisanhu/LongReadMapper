@@ -78,11 +78,12 @@ void write_objects_to_file(const value_type *tab, long length, std::string fname
 template<typename value_type>
 void add_objects_to_file(const value_type *tab, long length, std::FILE *f) {
   size_t fwrite_ret = std::fwrite(tab, sizeof(value_type), length, f);
-  if ((long)fwrite_ret != length) {
+  std::fflush(f);
+/**  if ((long)fwrite_ret != length) {
     fprintf(stderr, "\nError: fwrite in line %s of %s returned %lu\n",
         STR(__LINE__), STR(__FILE__), fwrite_ret);
     std::exit(EXIT_FAILURE);
-  }
+  }*/
 }
 
 template<typename value_type>
