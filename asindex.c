@@ -123,12 +123,16 @@ int main(int argc, const char **argv) {
 
 	dna_fmi idx;
 //	fmi_build(cfn, &idx, 128, 8L << 30);
+	printf("Start building fmindex\n");
 	fmi_build(cfn, &idx, 1, 8L << 30);
+	printf("Done building fmindex, start writing to disk\n");
 	fmi_write(idx, cfn);
 
 	int hash_len = 12;
+	printf("Start building lchash\n");
 	lc_hash hash = lc_build(&idx, hash_len);
 	char *lch_path = cstr_concat(cfn, ".lch");
+	printf("Start writing lchash to disk\n");
 	lc_write(lch_path, &hash);
 	lc_destroy(hash);
 

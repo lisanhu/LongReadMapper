@@ -168,17 +168,24 @@ static void _build_o_dna_table(const char *bwt, uint64_t length, int ratio, uint
 void fmi_build(const char *prefix, dna_fmi *idx, int o_ratio, long ram_use) {
 	/// build .sa5
 	sa_build(prefix, ram_use);
+	printf("Done building suffix array\n");
 
 	/// build c
+	printf("Start building C table\n");
 	idx->c = malloc(256 * sizeof(uint64_t));
+	if (idx->c == NULL) {
+		printf("Fail to malloc 256 uint64_t\n");
+	}
 	_build_c_table(prefix, idx->c, ram_use);
 
 	/// build bwt
+	printf("Start building bwt from suffix array\n");
 	mstring bwt = _bwt_from_sa5(prefix, ram_use);
 	idx->bwt = bwt.s;
 	idx->length = bwt.l;
 
 	/// build o assuming only ACGT are found in the text
+	printf("Start building O table\n");
 	idx->o_ratio = o_ratio;
 	idx->o_len = 4 * (idx->length / o_ratio + 1);
 	idx->o = malloc(idx->o_len * sizeof(uint64_t));
