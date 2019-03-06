@@ -124,7 +124,7 @@ int main(int argc, const char **argv) {
 	dna_fmi idx;
 //	fmi_build(cfn, &idx, 128, 8L << 30);
 	printf("Start building fmindex\n");
-	fmi_build(cfn, &idx, 1, 8L << 30);
+	fmi_build(cfn, &idx, 32, 8L << 30);
 	printf("Done building fmindex, start writing to disk\n");
 	fmi_write(idx, cfn);
 
