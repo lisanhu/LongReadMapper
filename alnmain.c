@@ -208,6 +208,7 @@ static inline int single_end(int argc, const char *argv[]) {
 		sprintf(msg, "Begin processing queries");
 		timer = print_log(AS_LOG_VERBOSE, msg, start);
 
+#pragma acc parallel loop
 		for (u64 i = 0; i < len; ++i) {
 			read_t r = reads[i];
 			remove_n(&r);  /// todo: is this required?

@@ -10,7 +10,7 @@
 KSEQ_INIT(gzFile, gzread)
 
 
-char revc_mapper[256] = {};
+char revc_mapper[256];
 
 
 
