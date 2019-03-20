@@ -176,6 +176,9 @@ static inline int single_end(int argc, const char *argv[]) {
 	struct timespec start, timer;
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
+	sprintf(msg, "Start initialization");
+	print_log(AS_LOG_VERBOSE, msg, start);
+
 	init(&ctx, argc, argv);
 //	parse_options(argc, argv, &ctx);
 	sprintf(msg, "Done initializing, begin loading reference file %s",
