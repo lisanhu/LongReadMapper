@@ -12,6 +12,7 @@
 #include "mutils.h"
 #include "histo/histo.h"
 #include "edlib/edlib.h"
+#include "alnmain.h"
 
 
 const double ERROR_RATE = 0.05;
@@ -133,10 +134,12 @@ void init(context *ctx, int argc, const char **argv) {
 	free(path);
 //	free(ctx->prefix);
 
-	ctx->batch_size = 100000L; // 1M reads
-	ctx->histo_cap = 300;
+	params p = read_params("params");
+
+	ctx->batch_size = p.batch_size; // default 1M reads
+	ctx->histo_cap = p.thres;
 	ctx->uninformative_thres = ctx->histo_cap;
-	ctx->seed_len = 20;
+	ctx->seed_len = p.seed_len;
 	ctx->read2 = NULL;
 	ctx->sa_cache_sz = 1L << 29; // 32 / 8G x 8 Bytes
 //	ctx->sa_cache_sz = 10000;
@@ -350,4 +353,16 @@ int main(int argc, const char **argv) {
 	}
 
 	return pair_end(argc, argv);
+}
+
+params read_params(const char *path) {
+	params result;
+	FILE *fp = fopen(path, "r");
+	result.thres = 300;
+	result.batch_size = 1000000;
+	result.seed_len = 20;
+	if (fp) {
+		fscanf(fp, "%lu %u %u", &result.batch_size, &result.seed_len, &result.thres);
+	}
+	return result;
 }
