@@ -193,7 +193,7 @@ static inline int single_end(int argc, const char *argv[]) {
 	read_t *reads = malloc(ctx.batch_size * sizeof(read_t));
 	result *results = malloc(ctx.batch_size * sizeof(result));
 
-	size_t total = 0, in_valid = 0;
+	size_t total = 0, valid = 0;
 
 	while ((len = reads_load(reads, ctx.batch_size, seq)) > 0) {
 		char *buf = refactor_reads_seq(reads, len, &ctx);
@@ -306,6 +306,7 @@ static inline int single_end(int argc, const char *argv[]) {
 				        results[i].r_name, results[i].r_off, 0, results[i].query,
 				        results[i].qual, results[i].ed);
 				free(results[i].CIGAR);
+				valid+=1;
 			}
 		}
 		fclose(out_stream);
@@ -315,6 +316,8 @@ static inline int single_end(int argc, const char *argv[]) {
 
 	sprintf(msg, "Done aligning");
 	timer = print_log(AS_LOG_VERBOSE, msg, start);
+	sprintf(msg, "Sensitivity: %ld/%ld=%lf\n", valid, total, ((double) valid / total));
+	print_log(AS_LOG_VERBOSE, msg, start);
 
 
 	kseq_destroy(seq);
