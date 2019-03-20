@@ -126,10 +126,10 @@ void init(context *ctx, int argc, const char **argv) {
 	ctx->mta = meta;
 	ctx->mta_len = len;
 
-	for (int i = 0; i < len; ++i) {
-		printf("seq_name: %s, seq_off: %ld, seq_len: %ld\n",
-		       meta[i].seq_name.s, meta[i].offset, meta[i].seq_len);
-	}
+//	for (int i = 0; i < len; ++i) {
+//		printf("seq_name: %s, seq_off: %ld, seq_len: %ld\n",
+//		       meta[i].seq_name.s, meta[i].offset, meta[i].seq_len);
+//	}
 
 	free(path);
 //	free(ctx->prefix);
