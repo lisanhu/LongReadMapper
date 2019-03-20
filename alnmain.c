@@ -133,10 +133,10 @@ void init(context *ctx, int argc, const char **argv) {
 	free(path);
 //	free(ctx->prefix);
 
-	ctx->batch_size = 1000000L; // 1M reads
-	ctx->histo_cap = 100;
+	ctx->batch_size = 100000L; // 1M reads
+	ctx->histo_cap = 300;
 	ctx->uninformative_thres = ctx->histo_cap;
-	ctx->seed_len = 12;
+	ctx->seed_len = 20;
 	ctx->read2 = NULL;
 	ctx->sa_cache_sz = 1L << 29; // 32 / 8G x 8 Bytes
 //	ctx->sa_cache_sz = 10000;
