@@ -34,9 +34,9 @@ if (ZLIB_FOUND)
 	target_link_libraries(accidx ${ZLIB_LIBRARIES})
 	target_link_libraries(accaln ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
-target_link_libraries(accidx edlib /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libsa_use.a /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libdivsufsort/lib/libdivsufsort64.a /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libdivsufsort/lib/libdivsufsort.a)
+target_link_libraries(accidx edlib ${CMAKE_SOURCE_DIR}/psascan/build/libsa_use.a ${CMAKE_SOURCE_DIR}/psascan/build/libdivsufsort/lib/libdivsufsort64.a ${CMAKE_SOURCE_DIR}/psascan/build/libdivsufsort/lib/libdivsufsort.a)
 #target_link_libraries(accidx edlib /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libsa_use.a /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libdivsufsort/lib/libdivsufsort64.a /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libdivsufsort/lib/libdivsufsort.a -mp)
-target_link_libraries(accaln edlib /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libsa_use.a /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libdivsufsort/lib/libdivsufsort64.a /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libdivsufsort/lib/libdivsufsort.a)
+target_link_libraries(accaln edlib ${CMAKE_SOURCE_DIR}/psascan/build/libsa_use.a ${CMAKE_SOURCE_DIR}/psascan/build/libdivsufsort/lib/libdivsufsort64.a ${CMAKE_SOURCE_DIR}/psascan/build/libdivsufsort/lib/libdivsufsort.a)
 #target_link_libraries(accaln sa_use edlib /home/lisanhu/mine/tmp/AccSeqV9/psascan/build/libsa_use.a)
 
 
