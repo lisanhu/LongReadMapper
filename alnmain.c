@@ -294,6 +294,9 @@ static inline int single_end(int argc, const char *argv[]) {
 
 		}
 
+		sprintf(msg, "Done processing current batch, currently processed %ld queries", total);
+		print_log(AS_LOG_VERBOSE, msg, start);
+
 
 		FILE *out_stream = stdout;
 		/// step 4: SAM generation
