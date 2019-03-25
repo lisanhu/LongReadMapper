@@ -25,6 +25,7 @@ inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
 	if (sa_buf && loc < sa_buf->start + sa_buf->len && loc >= sa_buf->start) {
 	} else {
 		/// when we need to load items from disk
+        printf("Loading from disk. on line %d\n", __LINE__);
 		if (!sa_buf) {
 			sa_buf = calloc(1, sizeof(sa_mem));
 			sa_buf->mem = malloc(cache_sz * sizeof(ui40_t));
@@ -43,6 +44,7 @@ inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
 
 		free(fname);
 		fclose(stream);
+        printf("Done loading from disk. on line %d\n", __LINE__);
 	}
 	return ui40_convert(sa_buf->mem[loc - sa_buf->start]);
 }
