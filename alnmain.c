@@ -141,7 +141,8 @@ void init(context *ctx, int argc, const char **argv) {
 	ctx->uninformative_thres = ctx->histo_cap;
 	ctx->seed_len = p.seed_len;
 	ctx->read2 = NULL;
-	ctx->sa_cache_sz = 1L << 29; // 32 / 8G x 8 Bytes
+//	ctx->sa_cache_sz = 1L << 29; // 32 / 8G x 8 Bytes
+	ctx->sa_cache_sz = 1L << 33; // 32 / 8G x 8 Bytes
 //	ctx->sa_cache_sz = 10000;
 
 	u64 l;
