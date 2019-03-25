@@ -20,6 +20,10 @@ if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	endif ()
 elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	# using PGI
+	# todo: PGI bug work-around
+	set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+	#    message("${CMAKE_CXX_FLAGS_DEBUG}")
+
 	set(CMAKE_CXX_FLAGS "-ta=multicore -Minfo ${CMAKE_CXX_FLAGS}")
 	set(CMAKE_C_FLAGS "-ta=multicore -Minfo ${CMAKE_CXX_FLAGS}")
 
