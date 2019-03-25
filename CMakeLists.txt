@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(AccSeqV8 C CXX)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 find_package(ZLIB REQUIRED)
