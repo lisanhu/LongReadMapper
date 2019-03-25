@@ -49,6 +49,7 @@ elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 	elseif(CMAKE_BUILD_TYPE EQUAL "RELEASE")
 		set(CMAKE_C_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 		set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
+		message("Release ${CMAKE_C_FLAGS}")
 	endif ()
 endif()
 
