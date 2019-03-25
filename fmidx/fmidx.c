@@ -31,16 +31,19 @@ inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
 			sa_buf->mem = malloc(cache_sz * sizeof(ui40_t));
 		}
 		/// initial sa_buf mem
+        printf("Before memset on line %d\n", __LINE__);
 		memset(sa_buf->mem, 0, cache_sz * sizeof(ui40_t));
-
+        printf("Done memset on line %d\n", __LINE__);
 		/// load the block for loc
 		uint64_t skipped = loc / cache_sz;
 		char *fname = cstr_concat(prefix, ".sa5");
 		FILE *stream = fopen(fname, "r");
 
 		fseek(stream, (long) (skipped * cache_sz * 5), SEEK_SET);
+        printf("Before ui40_fread at line %d\n", __LINE__);
 		sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
 		sa_buf->start = skipped * cache_sz;
+        printf("Done ui40_fread at line %d\n", __LINE__);
 
 		free(fname);
 		fclose(stream);
