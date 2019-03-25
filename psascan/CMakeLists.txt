@@ -8,8 +8,13 @@ add_subdirectory(libdivsufsort)
 
 set(SRC_FILES src/psascan_src/utils.cpp src/main.cpp)
 
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mp")
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    # using GCC
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
+    # using PGI
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mp")
+endif()
 
 add_executable(psascan ${SRC_FILES})
 target_include_directories(psascan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsufsort/include)
@@ -17,8 +22,14 @@ target_link_libraries(psascan divsufsort divsufsort64)
 
 
 add_library(sa_use sa_use.cc src/psascan_src/utils.cpp)
-#target_compile_options(sa_use BEFORE PRIVATE "-fopenmp")
-target_compile_options(sa_use BEFORE PRIVATE "-mp")
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+    # using GCC
+    target_compile_options(sa_use BEFORE PRIVATE "-fopenmp")
+elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
+    # using PGI
+    target_compile_options(sa_use BEFORE PRIVATE "-mp")
+endif()
+
 target_include_directories(sa_use PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsufsort/include)
 target_link_libraries(sa_use divsufsort divsufsort64)
 
