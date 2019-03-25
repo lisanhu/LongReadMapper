@@ -32,7 +32,7 @@ inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
 		}
 		/// initial sa_buf mem
         printf("Before memset on line %d\n", __LINE__);
-		memset(sa_buf->mem, 0, cache_sz * sizeof(ui40_t));
+//		memset(sa_buf->mem, 0, cache_sz * sizeof(ui40_t));
         printf("Done memset on line %d\n", __LINE__);
 		/// load the block for loc
 		uint64_t skipped = loc / cache_sz;
