@@ -22,6 +22,11 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 #    message("${CMAKE_CXX_FLAGS_DEBUG}")
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mp")
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set(CMAKE_C_FLAGS "-O4 ${CMAKE_C_FLAGS}")
+        set(CMAKE_CXX_FLAGS "-O4 ${CMAKE_CXX_FLAGS}")
+    endif ()
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
