@@ -325,7 +325,7 @@ static inline int single_end(int argc, const char *argv[]) {
 				valid+=1;
 			}
 		}
-		fclose(out_stream);
+//		fclose(out_stream);
 		free(buf);
 	}
 
