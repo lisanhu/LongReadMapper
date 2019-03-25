@@ -31,6 +31,15 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 		set(CMAKE_CXX_FLAGS "-pg ${CMAKE_CXX_FLAGS}")
 		set(CMAKE_EXE_LINKER_FLAGS "-pg ${CMAKE_EXE_LINKER_FLAGS}")
 	endif ()
+elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+	# using Clang
+	set(CMAKE_CXX_FLAGS "-fopenmp=libomp ${CMAKE_CXX_FLAGS}")
+	set(CMAKE_C_FLAGS "-fopenmp=libomp ${CMAKE_CXX_FLAGS}")
+
+	if (CMAKE_BUILD_TYPE EQUAL "DEBUG")
+		set(CMAKE_CXX_FLAGS "-pg -fsanitize=address ${CMAKE_CXX_FLAGS}")
+		set(CMAKE_EXE_LINKER_FLAGS "-pg fsanitize=address ${CMAKE_EXE_LINKER_FLAGS}")
+	endif ()
 endif()
 
 add_executable(accidx asindex.c mutils.c mutils.h fmidx/fmidx.c
