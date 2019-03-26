@@ -79,10 +79,6 @@ int load_mta(const char *path, mta_entry *result) {
 }
 
 
-//result re = {.loc = loc, .off = loc, .r_off = loc, .CIGAR = cigar,
-//		.q_name = strdup(r.name.s), .g_name = "chr1", .qual = strdup(r.qual),
-//		.query = strdup(r.seq), .r_name = "*", .ed = limit, .mapq = 255,
-//		.valid = (limit >= 0)};
 typedef struct seq_meta {
 	uint64_t loc, off;
 	mstring g_name;
@@ -106,35 +102,33 @@ int seq_meta_lookup(mta_entry *table, int len, uint64_t loc, seq_meta *result) {
 
 
 void init(context *ctx, int argc, const char **argv) {
-//	ctx->genome = strdup("chr1.fa");
-//	ctx->genome = strdup("yeast.fsa");
 	ctx->genome = strdup(argv[1]);
-//	ctx->read1 = strdup("yeast-1m-1.fq");
 	ctx->read1 = strdup(argv[2]);
 	ctx->prefix = cstr_concat(ctx->genome, ".cat");
 
 	ctx->fmi = malloc(sizeof(dna_fmi));
 	ctx->lch = malloc(sizeof(lc_hash));
+    printf("fmi_read @ %s:%d\n", __FILE__, __LINE__);
 	fmi_read(ctx->fmi, ctx->prefix);
+    printf("fmi_read done.\n");
 	char *path = cstr_concat(ctx->prefix, ".lch");
+    printf("lc_read @ %s:%d\n", __FILE__, __LINE__);
 	lc_read(path, ctx->lch);
+    printf("lc_read done.\n");
 	free(path);
 
 	path = cstr_concat(ctx->genome, ".mta");
 	mta_entry *meta = malloc(sizeof(mta_entry) * 1000);
+    printf("ld_mta @ %s:%d\n", __FILE__, __LINE__);
 	int len = load_mta(path, meta);
+    printf("ld_mta done.\n");
 	ctx->mta = meta;
 	ctx->mta_len = len;
 
-//	for (int i = 0; i < len; ++i) {
-//		printf("seq_name: %s, seq_off: %ld, seq_len: %ld\n",
-//		       meta[i].seq_name.s, meta[i].offset, meta[i].seq_len);
-//	}
-
 	free(path);
-//	free(ctx->prefix);
-
+    printf("ld_params @ %s:%d\n", __FILE__, __LINE__);
 	params p = read_params("params");
+    printf("ld_params done.\n");
 
 	ctx->batch_size = p.batch_size; // default 1M reads
 	ctx->histo_cap = p.thres;
@@ -142,11 +136,13 @@ void init(context *ctx, int argc, const char **argv) {
 	ctx->seed_len = p.seed_len;
 	ctx->read2 = NULL;
 //	ctx->sa_cache_sz = 1L << 29; // 32 / 8G x 8 Bytes
-	ctx->sa_cache_sz = 1L << 33; // 32 / 8G x 8 Bytes
+	ctx->sa_cache_sz = 1L << 33; // 8G entries
 //	ctx->sa_cache_sz = 10000;
 
 	u64 l;
+    printf("load_file cat @ %s:%d\n", __FILE__, __LINE__);
 	ctx->content = load_file(ctx->prefix, &l);
+    printf("load_file done.\n");
 	ctx->con_len = l;
 
 	srand48(time(NULL));

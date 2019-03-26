@@ -22,34 +22,41 @@ static sa_mem *sa_buf = NULL;
 
 
 inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
-	if (sa_buf && loc < sa_buf->start + sa_buf->len && loc >= sa_buf->start) {
-	} else {
-		/// when we need to load items from disk
-        printf("Loading from disk. on line %d\n", __LINE__);
-		if (!sa_buf) {
-			sa_buf = calloc(1, sizeof(sa_mem));
-			sa_buf->mem = malloc(cache_sz * sizeof(ui40_t));
-		}
-		/// initial sa_buf mem
-        printf("Before memset on line %d\n", __LINE__);
-//		memset(sa_buf->mem, 0, cache_sz * sizeof(ui40_t));
-        printf("Done memset on line %d\n", __LINE__);
-		/// load the block for loc
-		uint64_t skipped = loc / cache_sz;
-		char *fname = cstr_concat(prefix, ".sa5");
-		FILE *stream = fopen(fname, "r");
-
-		fseek(stream, (long) (skipped * cache_sz * 5), SEEK_SET);
-        printf("Before ui40_fread at line %d\n", __LINE__);
-		sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
-		sa_buf->start = skipped * cache_sz;
-        printf("Done ui40_fread at line %d\n", __LINE__);
-
-		free(fname);
-		fclose(stream);
-        printf("Done loading from disk. on line %d\n", __LINE__);
-	}
-	return ui40_convert(sa_buf->mem[loc - sa_buf->start]);
+//	if (sa_buf && loc < sa_buf->start + sa_buf->len && loc >= sa_buf->start) {
+//	} else {
+//		/// when we need to load items from disk
+//        printf("Loading from disk. on line %d\n", __LINE__);
+//		if (!sa_buf) {
+//			sa_buf = calloc(1, sizeof(sa_mem));
+//			sa_buf->mem = malloc(cache_sz * sizeof(ui40_t));
+//		}
+//		/// initial sa_buf mem
+//        printf("Before memset on line %d\n", __LINE__);
+////		memset(sa_buf->mem, 0, cache_sz * sizeof(ui40_t));
+//        printf("Done memset on line %d\n", __LINE__);
+//		/// load the block for loc
+//		uint64_t skipped = loc / cache_sz;
+//		char *fname = cstr_concat(prefix, ".sa5");
+//		FILE *stream = fopen(fname, "r");
+//
+//		fseek(stream, (long) (skipped * cache_sz * 5), SEEK_SET);
+//        printf("Before ui40_fread at line %d\n", __LINE__);
+//		sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
+//		sa_buf->start = skipped * cache_sz;
+//        printf("Done ui40_fread at line %d\n", __LINE__);
+//
+//		free(fname);
+//		fclose(stream);
+//        printf("Done loading from disk. on line %d\n", __LINE__);
+//	}
+//	return ui40_convert(sa_buf->mem[loc - sa_buf->start]);
+    printf("Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
+    char *fname = cstr_concat(prefix, ".sa5");
+    FILE *stream = fopen(fname, "r");
+    printf("Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
+    sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
+    printf("Done ui40_read.\n");
+    return ui40_convert(sa_buf->mem[loc]);
 }
 
 void sa_done_access() {
