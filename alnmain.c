@@ -244,8 +244,6 @@ static inline int single_end(int argc, const char *argv[]) {
 				entry cand[2];
 				histo *in_iter_histo = histo_init(ctx.histo_cap);
 
-                printf("Start building histogram %d\n", __LINE__);
-
 				for (int j = iter; j < r.len - sl; j += sl + gl) {
 					u64 kk = 1, ll = ctx.fmi->length - 1, rr;
 
@@ -260,9 +258,6 @@ static inline int single_end(int argc, const char *argv[]) {
 						}
 					}
 				}
-
-                printf("Done building histogram %d\n", __LINE__);
-                printf("Start applying novel seed %d\n", __LINE__);
 
 				int num_seeds = r.len / (sl + gl);
 
@@ -288,7 +283,6 @@ static inline int single_end(int argc, const char *argv[]) {
 				}
 
 				histo_destroy(in_iter_histo);
-                printf("Done seeding and location choose at line %d\n", __LINE__);
 			}
 
 
@@ -298,7 +292,6 @@ static inline int single_end(int argc, const char *argv[]) {
 			int meta_r = seq_meta_lookup(ctx.mta, ctx.mta_len, loc, &m);
 
 
-            printf("Start edlib alignment @ line %d\n", __LINE__);
 			char *cigar = cigar_align(r.seq, r.len, ctx.content + loc, r.len,
 			                          &limit);
 			result re = {.loc = loc, .off = m.off, .r_off = loc, .CIGAR = cigar,
@@ -312,7 +305,6 @@ static inline int single_end(int argc, const char *argv[]) {
 				re.valid = false;
 			}
 			results[i] = re;
-            printf("Done filling in the result %d\n", __LINE__);
 			histo_destroy(ot_iter_histo);
 
 		}
