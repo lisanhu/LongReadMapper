@@ -51,5 +51,5 @@ endif()
 target_include_directories(sa_use PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsufsort/include)
 target_link_libraries(sa_use divsufsort divsufsort64)
 
-add_executable(sa_use_test sa_use_test.c)
-target_link_libraries(sa_use_test sa_use)
+#add_executable(sa_use_test sa_use_test.c)
+#target_link_libraries(sa_use_test sa_use)

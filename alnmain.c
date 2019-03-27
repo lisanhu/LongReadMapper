@@ -150,6 +150,7 @@ void init(context *ctx, int argc, const char **argv) {
 	char *fname = cstr_concat(ctx->prefix, ".sa5");
 	FILE *stream = fopen(fname, "r");
 	printf("Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
+	sa_buf->mem = malloc(sizeof(ui40_t) * l);
 	sa_buf->len = ui40_fread(sa_buf->mem, l, stream);
 	printf("Done ui40_read.\n");
 	fclose(stream);
