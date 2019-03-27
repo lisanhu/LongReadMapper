@@ -27,13 +27,18 @@ static inline size_t ui40_fread(ui40_t *buf, size_t nitems, FILE *stream) {
 	size_t i = 0;
 	uint32_t low;
 	uint8_t high;
+	printf("%s:%d\n", __FILE__, __LINE__);
 	for (; i < nitems; ++i) {
+		printf("%s:%d\n", __FILE__, __LINE__);
 		fread(&low, sizeof(low), 1, stream);
+		printf("%s:%d\n", __FILE__, __LINE__);
 		size_t sz = fread(&high, sizeof(high), 1, stream);
+		printf("%s:%d\n", __FILE__, __LINE__);
 		if (sz == 0) break;
 		buf[i].low = low;
 		buf[i].high = high;
 	}
+	printf("%s:%d\n", __FILE__, __LINE__);
 	return i;
 }
 
