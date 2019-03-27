@@ -7,6 +7,7 @@
 
 
 #include <stdint.h>
+#include "../psascan/sa_use.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,6 +20,12 @@ typedef struct _dna_fmi {
 	char *bwt;
 } dna_fmi;
 
+typedef struct {
+	uint64_t start, len;
+	ui40_t *mem;
+} sa_mem;
+
+extern sa_mem *sa_buf;
 
 uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc);
 void sa_done_access();

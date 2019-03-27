@@ -13,12 +13,7 @@
 #include "../mutils.h"
 
 
-typedef struct {
-	uint64_t start, len;
-	ui40_t *mem;
-} sa_mem;
-
-static sa_mem *sa_buf = NULL;
+sa_mem *sa_buf = NULL;
 
 
 inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
@@ -53,15 +48,17 @@ inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
     if (sa_buf != NULL) {
         if (loc > sa_buf->len) {
             printf("Accessing sa element out of scope");
+			return 0;
         }
-    } else {
-        printf("Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
-        char *fname = cstr_concat(prefix, ".sa5");
-        FILE *stream = fopen(fname, "r");
-        printf("Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
-        sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
-        printf("Done ui40_read.\n");
     }
+//    else {
+//        printf("Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
+//        char *fname = cstr_concat(prefix, ".sa5");
+//        FILE *stream = fopen(fname, "r");
+//        printf("Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
+//        sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
+//        printf("Done ui40_read.\n");
+//    }
     return ui40_convert(sa_buf->mem[loc]);
 }
 
