@@ -101,34 +101,49 @@ int seq_meta_lookup(mta_entry *table, int len, uint64_t loc, seq_meta *result) {
 }
 
 
-void init(context *ctx, int argc, const char **argv) {
+void init(struct timespec start, context *ctx, int argc, const char **argv) {
+
+    char tmp[1024] = {};
+
 	ctx->genome = strdup(argv[1]);
 	ctx->read1 = strdup(argv[2]);
 	ctx->prefix = cstr_concat(ctx->genome, ".cat");
 
 	ctx->fmi = malloc(sizeof(dna_fmi));
 	ctx->lch = malloc(sizeof(lc_hash));
-    printf("fmi_read @ %s:%d\n", __FILE__, __LINE__);
+
+    sprintf(tmp, "fmi_read @ %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
+
 	fmi_read(ctx->fmi, ctx->prefix);
-    printf("fmi_read done.\n");
+    sprintf(tmp, "fmi_read done.\n");
+    print_log(AS_LOG_VERBOSE, tmp, start);
+
 	char *path = cstr_concat(ctx->prefix, ".lch");
-    printf("lc_read @ %s:%d\n", __FILE__, __LINE__);
+    sprintf(tmp, "lc_read @ %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
+
 	lc_read(path, ctx->lch);
-    printf("lc_read done.\n");
+    sprintf(tmp, "lc_read done.\n");
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	free(path);
 
 	path = cstr_concat(ctx->genome, ".mta");
 	mta_entry *meta = malloc(sizeof(mta_entry) * 1000);
-    printf("ld_mta @ %s:%d\n", __FILE__, __LINE__);
+    sprintf(tmp, "ld_mta @ %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	int len = load_mta(path, meta);
-    printf("ld_mta done.\n");
+    sprintf(tmp, "ld_mta done.\n");
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	ctx->mta = meta;
 	ctx->mta_len = len;
 
 	free(path);
-    printf("ld_params @ %s:%d\n", __FILE__, __LINE__);
+    sprintf(tmp, "ld_params @ %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	params p = read_params("params");
-    printf("ld_params done.\n");
+    sprintf(tmp, "ld_params done.\n");
+    print_log(AS_LOG_VERBOSE, tmp, start);
 
 	ctx->batch_size = p.batch_size; // default 1M reads
 	ctx->histo_cap = p.thres;
@@ -140,22 +155,29 @@ void init(context *ctx, int argc, const char **argv) {
 //	ctx->sa_cache_sz = 10000;
 
 	u64 l;
-    printf("load_file cat @ %s:%d\n", __FILE__, __LINE__);
+    sprintf(tmp, "load_file cat @ %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	ctx->content = load_file(ctx->prefix, &l);
-    printf("load_file done.\n");
+    sprintf(tmp, "load_file done.\n");
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	ctx->con_len = l;
 
 
-	printf("Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
+	sprintf(tmp, "Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	char *fname = cstr_concat(ctx->prefix, ".sa5");
 	FILE *stream = fopen(fname, "r");
-	printf("Before ui40_read. at %s:%d\n", __FILE__, __LINE__);
-	printf("%ld\n", l * sizeof(ui40_t));
+	sprintf(tmp, "Before ui40_read. at %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
+	sprintf(tmp, "%ld\n", l * sizeof(ui40_t));
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	sa_buf = calloc(1, sizeof(sa_mem));
 	sa_buf->mem = malloc(sizeof(ui40_t) * l);
-	printf("Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
+	sprintf(tmp, "Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	sa_buf->len = ui40_fread(sa_buf->mem, l, stream);
-	printf("Done ui40_read.\n");
+	sprintf(tmp, "Done ui40_read.\n");
+    print_log(AS_LOG_VERBOSE, tmp, start);
 	fclose(stream);
 	free(fname);
 
@@ -190,7 +212,7 @@ static inline int single_end(int argc, const char *argv[]) {
 	sprintf(msg, "Start initialization");
 	print_log(AS_LOG_VERBOSE, msg, start);
 
-	init(&ctx, argc, argv);
+	init(start, &ctx, argc, argv);
 //	parse_options(argc, argv, &ctx);
 	sprintf(msg, "Done initializing, begin loading reference file %s",
 	        ctx.genome);
