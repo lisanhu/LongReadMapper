@@ -50,6 +50,13 @@ inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
             printf("Accessing sa element out of scope");
 			return 0;
         }
+    } else {
+		sa_buf = calloc(1, sizeof(sa_mem));
+		sa_buf->mem = malloc(sizeof(ui40_t) * cache_sz);
+		char *fname = cstr_concat(prefix, ".sa5");
+		FILE *stream = fopen(fname, "r");
+		sa_buf->len = ui40_fread(sa_buf->mem, cache_sz, stream);
+		free(fname);
     }
 //    else {
 //        printf("Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
@@ -116,7 +123,7 @@ static mstring _bwt_from_sa5(const char *prefix, long ram_use) {
 	text_buf_access(&start, size, prefix, buf, 0, true);
 
 	for (uint64_t i = 0; i < bwt.l; ++i) {
-		uint64_t si = sa_access(prefix, 1000000, i);
+		uint64_t si = sa_access(prefix, bwt.l, i);
 		bwt.s[i] = (char) (si == 0 ? '$' :
 		                   text_buf_access(&start, size, prefix, buf, si - 1,
 		                                   false));
