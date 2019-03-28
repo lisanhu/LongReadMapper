@@ -103,7 +103,7 @@ int seq_meta_lookup(mta_entry *table, int len, uint64_t loc, seq_meta *result) {
 
 void init(struct timespec start, context *ctx, int argc, const char **argv) {
 
-    char tmp[1024] = {};
+    char tmp[1024] = "";
 
 	ctx->genome = strdup(argv[1]);
 	ctx->read1 = strdup(argv[2]);
