@@ -70,3 +70,7 @@ if (ZLIB_FOUND)
 	target_link_libraries(accidx ${ZLIB_LIBRARIES})
 	target_link_libraries(accaln ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
+
+
+#add_executable(test test/test-main.cc test/test-ui40read.cc)
+#target_link_libraries(test sa_use)
