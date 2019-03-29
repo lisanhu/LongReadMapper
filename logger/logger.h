@@ -5,13 +5,24 @@
 #ifndef ACCSEQ_LOGGER_H
 #define ACCSEQ_LOGGER_H
 
-#define AS_LOG_VERBOSE  0
-#define AS_LOG_ERROR    1
+#include <stdio.h>
 
 typedef struct timespec ts_t;
+typedef struct mlog mlog;
 
-extern int level;
+typedef ts_t (*ml_mp_ptr)(mlog *, int, const char *, ...);
+typedef ts_t (*ml_mv_ptr)(mlog *, const char *, ...);
+typedef ts_t (*ml_me_ptr)(mlog *, const char *, ...);
 
-struct timespec print_log(int l, const char *text, ts_t start_time);
+struct mlog {
+    ts_t start;
+    FILE *stream;
+    ml_mp_ptr mprint;
+    ml_mv_ptr mvlog;
+    ml_me_ptr melog;
+};
+
+
+mlog new_mlogger(ts_t *start);
 
 #endif //ACCSEQ_LOGGER_H

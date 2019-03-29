@@ -62,7 +62,7 @@ target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort)
 
 
 add_executable(accaln accaln.c alnmain.c logger/logger.c
-		histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c)
+		histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c logger/logger_use.c)
 target_link_libraries(accaln edlib sa_use divsufsort64 divsufsort)
 
 if (ZLIB_FOUND)
@@ -72,5 +72,5 @@ if (ZLIB_FOUND)
 endif (ZLIB_FOUND)
 
 
-#add_executable(test test/test-main.cc test/test-ui40read.cc)
-#target_link_libraries(test sa_use)
+add_executable(test test/play.c logger/logger.c ../mutils.c)
+target_link_libraries(test edlib)

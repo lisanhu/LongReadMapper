@@ -206,24 +206,25 @@ static inline int single_end(int argc, const char *argv[]) {
 	context ctx;
 	char msg[1024];
 
-	struct timespec start, timer;
+	struct timespec sstart, timer;
+	clock_gettime(CLOCK_MONOTONIC, &sstart);
 	clock_gettime(CLOCK_MONOTONIC, &start);
 
 	sprintf(msg, "Start initialization");
-	print_log(AS_LOG_VERBOSE, msg, start);
+	print_log(AS_LOG_VERBOSE, msg, sstart);
 
-	init(start, &ctx, argc, argv);
+	init(sstart, &ctx, argc, argv);
 //	parse_options(argc, argv, &ctx);
 	sprintf(msg, "Done initializing, begin loading reference file %s",
 	        ctx.genome);
-	timer = print_log(AS_LOG_VERBOSE, msg, start);
+	timer = print_log(AS_LOG_VERBOSE, msg, sstart);
 
 
 	sprintf(msg, "Done loading reference in %lfs", time_elapse(timer));
-	print_log(AS_LOG_VERBOSE, msg, start);
+	print_log(AS_LOG_VERBOSE, msg, sstart);
 
 	sprintf(msg, "Begin loading queries from %s", ctx.read1);
-	timer = print_log(AS_LOG_VERBOSE, msg, start);
+	timer = print_log(AS_LOG_VERBOSE, msg, sstart);
 
 
 	u64 len;
@@ -242,10 +243,10 @@ static inline int single_end(int argc, const char *argv[]) {
 		/// 		total number of reads
 		sprintf(msg, "Done loading %ld queries in %lfs", len,
 		        time_elapse(timer));
-		print_log(AS_LOG_VERBOSE, msg, start);
+		print_log(AS_LOG_VERBOSE, msg, sstart);
 
 		sprintf(msg, "Begin processing queries");
-		timer = print_log(AS_LOG_VERBOSE, msg, start);
+		timer = print_log(AS_LOG_VERBOSE, msg, sstart);
 
 #pragma acc parallel loop
 		for (u64 i = 0; i < len; ++i) {
@@ -332,7 +333,7 @@ static inline int single_end(int argc, const char *argv[]) {
 		}
 
 		sprintf(msg, "Done processing current batch, currently processed %ld queries", total);
-		print_log(AS_LOG_VERBOSE, msg, start);
+		print_log(AS_LOG_VERBOSE, msg, sstart);
 
 
 		FILE *out_stream = stdout;
@@ -355,9 +356,9 @@ static inline int single_end(int argc, const char *argv[]) {
 
 
 	sprintf(msg, "Done aligning");
-	timer = print_log(AS_LOG_VERBOSE, msg, start);
+	timer = print_log(AS_LOG_VERBOSE, msg, sstart);
 	sprintf(msg, "Sensitivity: %ld/%ld=%lf\n", valid, total, ((double) valid / total));
-	print_log(AS_LOG_VERBOSE, msg, start);
+	print_log(AS_LOG_VERBOSE, msg, sstart);
 
 
 	kseq_destroy(seq);
