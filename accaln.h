@@ -15,6 +15,7 @@
 #include "kseq.h"
 #include "fmidx/fmidx.h"
 #include "lchash/lchash.h"
+#include "mlog/logger.h"
 
 KSEQ_INIT(gzFile, gzread)
 
@@ -79,6 +80,7 @@ typedef struct _context {
 	u64 con_len;
 	mta_entry *mta;
 	int mta_len;
+	mlog log;
 //	size_t batch_size, gene_total_len;
 //	int32_t max_len, seed_len;
 //	char *read1, *read2, *genome, *content, *out_file; /// content: concat file content
