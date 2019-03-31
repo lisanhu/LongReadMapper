@@ -134,7 +134,7 @@ void init(context *ctx, int argc, const char **argv) {
 
     free(path);
     log.mvlog(&log, "ld_params @ %s:%d", __FILE__, __LINE__);
-    params p = read_params("params");
+    params p = read_params("params", ctx);
     log.mvlog(&log, "ld_params done.");
 
     ctx->batch_size = p.batch_size; // default 1M reads
@@ -365,7 +365,7 @@ int main(int argc, const char **argv) {
     return pair_end(argc, argv);
 }
 
-params read_params(const char *path) {
+params read_params(const char *path, context *ctx) {
     params result;
     FILE *fp = fopen(path, "r");
     result.thres = 300;
@@ -375,5 +375,11 @@ params read_params(const char *path) {
         fscanf(fp, "%lu %u %u", &result.batch_size, &result.seed_len,
                &result.thres);
     }
+
+    mlog log = ctx->log;
+    log.mvlog(&log, "Current settings:");
+    log.mvlog(&log, "batch_size: %ld", result.batch_size);
+    log.mvlog(&log, "seed_length: %d", result.seed_len);
+    log.mvlog(&log, "non-informative seeds threshold: %d", result.thres);
     return result;
 }

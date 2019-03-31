@@ -12,6 +12,6 @@ typedef struct params {
 	u32 seed_len, thres;
 } params;
 
-params read_params(const char *path);
+params read_params(const char *path, context *ctx);
 
 #endif //ACCSEQV8_ALNMAIN_H
