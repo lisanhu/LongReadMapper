@@ -101,9 +101,8 @@ int seq_meta_lookup(mta_entry *table, int len, uint64_t loc, seq_meta *result) {
 }
 
 
-void init(struct timespec start, context *ctx, int argc, const char **argv) {
+void init(context *ctx, int argc, const char **argv) {
 
-    char tmp[1024] = "";
     mlog log = ctx->log;
 
     ctx->genome = strdup(argv[1]);
@@ -113,45 +112,29 @@ void init(struct timespec start, context *ctx, int argc, const char **argv) {
     ctx->fmi = malloc(sizeof(dna_fmi));
     ctx->lch = malloc(sizeof(lc_hash));
 
-//    sprintf(tmp, "fmi_read @ %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "fmi_read @ %s:%d", __FILE__, __LINE__);
 
     fmi_read(ctx->fmi, ctx->prefix);
-//    sprintf(tmp, "fmi_read done.\n");
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "fmi_read done.");
 
     char *path = cstr_concat(ctx->prefix, ".lch");
-//    sprintf(tmp, "lc_read @ %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "lc_read @ %s:%d", __FILE__, __LINE__);
 
     lc_read(path, ctx->lch);
-//    sprintf(tmp, "lc_read done.\n");
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "lc_read done.");
     free(path);
 
     path = cstr_concat(ctx->genome, ".mta");
     mta_entry *meta = malloc(sizeof(mta_entry) * 1000);
-//    sprintf(tmp, "ld_mta @ %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "ld_mta @ %s:%d", __FILE__, __LINE__);
     int len = load_mta(path, meta);
-//    sprintf(tmp, "ld_mta done.\n");
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "ld_mta done.");
     ctx->mta = meta;
     ctx->mta_len = len;
 
     free(path);
-//    sprintf(tmp, "ld_params @ %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "ld_params @ %s:%d", __FILE__, __LINE__);
     params p = read_params("params");
-//    sprintf(tmp, "ld_params done.\n");
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "ld_params done.");
 
     ctx->batch_size = p.batch_size; // default 1M reads
@@ -164,35 +147,21 @@ void init(struct timespec start, context *ctx, int argc, const char **argv) {
 //	ctx->sa_cache_sz = 10000;
 
     u64 l;
-//    sprintf(tmp, "load_file cat @ %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "load_file cat @ %s:%d", __FILE__, __LINE__);
     ctx->content = load_file(ctx->prefix, &l);
-//    sprintf(tmp, "load_file done.\n");
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "load_file done.");
     ctx->con_len = l;
 
 
-//	sprintf(tmp, "Loading sa5 from disk. at %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "Loading sa5 from disk. at %s:%d", __FILE__, __LINE__);
     char *fname = cstr_concat(ctx->prefix, ".sa5");
     FILE *stream = fopen(fname, "r");
-//	sprintf(tmp, "Before ui40_read. at %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "Before ui40_read. at %s:%d", __FILE__, __LINE__);
-//	sprintf(tmp, "%ld\n", l * sizeof(ui40_t));
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "%ld", l * sizeof(ui40_t));
     sa_buf = calloc(1, sizeof(sa_mem));
     sa_buf->mem = malloc(sizeof(ui40_t) * l);
-//	sprintf(tmp, "Start ui40_read from disk. at %s:%d\n", __FILE__, __LINE__);
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "Start ui40_read from disk. at %s:%d", __FILE__, __LINE__);
     sa_buf->len = ui40_fread(sa_buf->mem, l, stream);
-//	sprintf(tmp, "Done ui40_read.\n");
-//    print_log(AS_LOG_VERBOSE, tmp, start);
     log.mvlog(&log, "Done ui40_read.");
     fclose(stream);
     free(fname);
@@ -220,31 +189,18 @@ static inline void usage(const char *path) {
 
 static inline int single_end(int argc, const char *argv[]) {
     context ctx;
-    char msg[1024];
     ctx.log = new_mlogger(NULL);
     mlog log = ctx.log;
-    struct timespec sstart, timer;
-//	clock_gettime(CLOCK_MONOTONIC, &sstart);
-//	clock_gettime(CLOCK_MONOTONIC, &start);
+    struct timespec timer;
 
-//	sprintf(msg, "Start initialization");
-//	print_log(AS_LOG_VERBOSE, msg, sstart);
     log.mvlog(&log, "Start initialization");
 
-    init(sstart, &ctx, argc, argv);
-//	parse_options(argc, argv, &ctx);
-//	sprintf(msg, "Done initializing, begin loading reference file %s",
-//	        ctx.genome);
-//	timer = print_log(AS_LOG_VERBOSE, msg, sstart);
+    init(&ctx, argc, argv);
     timer = log.mvlog(&log, "Done initializing, begin loading reference file %s",
               ctx.genome);
 
-//    sprintf(msg, "Done loading reference in %lfs", time_elapse(timer));
-//    print_log(AS_LOG_VERBOSE, msg, sstart);
     log.mvlog(&log, "Done loading reference in %lfs", time_elapse(timer));
 
-//    sprintf(msg, "Begin loading queries from %s", ctx.read1);
-//    timer = print_log(AS_LOG_VERBOSE, msg, sstart);
     timer = log.mvlog(&log, "Begin loading queries from %s", ctx.read1);
 
     u64 len;
@@ -261,14 +217,9 @@ static inline int single_end(int argc, const char *argv[]) {
 
         /// todo: loading part should use total length of bps instead of
         /// 		total number of reads
-//        sprintf(msg, "Done loading %ld queries in %lfs", len,
-//                time_elapse(timer));
-//        print_log(AS_LOG_VERBOSE, msg, sstart);
         log.mvlog(&log, "Done loading %ld queries in %lfs", len,
                   time_elapse(timer));
 
-//        sprintf(msg, "Begin processing queries");
-//        timer = print_log(AS_LOG_VERBOSE, msg, sstart);
         log.mvlog(&log, "Begin processing queries");
 #pragma acc parallel loop
         for (u64 i = 0; i < len; ++i) {
@@ -355,10 +306,6 @@ static inline int single_end(int argc, const char *argv[]) {
 
         }
 
-//        sprintf(msg,
-//                "Done processing current batch, currently processed %ld queries",
-//                total);
-//        print_log(AS_LOG_VERBOSE, msg, sstart);
         log.mvlog(&log, "Done processing current batch, "
                         "currently processed %ld queries", total);
 
@@ -380,15 +327,11 @@ static inline int single_end(int argc, const char *argv[]) {
         }
 //		fclose(out_stream);
         free(buf);
+        clock_gettime(CLOCK_MONOTONIC, &timer);
     }
 
 
-//    sprintf(msg, "Done aligning");
-//    timer = print_log(AS_LOG_VERBOSE, msg, sstart);
     log.mvlog(&log, "Done aligning");
-//    sprintf(msg, "Sensitivity: %ld/%ld=%lf\n", valid, total,
-//            ((double) valid / total));
-//    print_log(AS_LOG_VERBOSE, msg, sstart);
     log.mvlog(&log, "Sensitivity: %ld/%ld=%lf\n", valid, total,
               ((double) valid / total));
 
