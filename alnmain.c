@@ -18,6 +18,22 @@
 const double ERROR_RATE = 0.05;
 
 
+void gen_sam_header(mta_entry *mta, int l, FILE *stream) {
+    long rg_id = time(NULL);
+    char name[1024];
+
+    for (int i = 0; i < l; ++i) {
+        mta_entry m = mta[i];
+        /// todo: assert m.seq_name.l < 1023
+        strncpy(name, m.seq_name.s, m.seq_name.l);
+        name[m.seq_name.l] = 0;
+        fprintf(stream, "@SQ\tSN:%s\tLN:%ld\n", name, m.seq_len);
+    }
+    fprintf(stream, "@RG\tID:%s%ld\n", "accaln", rg_id);
+    fprintf(stream, "@PG\tID:%s\tPN:%s\n", "accaln", "accaln");
+}
+
+
 /**
  * A function to concat the storage of the reads together
  *
@@ -61,12 +77,12 @@ int32_t _dna_rand_ch() {
 }
 
 
-/// todo: remove the assumption of less than 1000 genes
+/// todo: remove the assumption of less than 65535 genes
 /// todo: sizeof(size_t) could be different on different systems
 ///	may result in indexing files could not be used in other systems
 int load_mta(const char *path, mta_entry *result) {
     FILE *mfp = fopen(path, "r");
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 65535; ++i) {
         size_t l = mstring_read(&result[i].seq_name, mfp);
         if (l == 0) {
             return i;
@@ -125,10 +141,11 @@ void init(context *ctx, int argc, const char **argv) {
     free(path);
 
     path = cstr_concat(ctx->genome, ".mta");
-    mta_entry *meta = malloc(sizeof(mta_entry) * 1000);
+    mta_entry *meta = malloc(sizeof(mta_entry) * 65535);
     log.mvlog(&log, "ld_mta @ %s:%d", __FILE__, __LINE__);
     int len = load_mta(path, meta);
     log.mvlog(&log, "ld_mta done.");
+    gen_sam_header(meta, len, stdout);
     ctx->mta = meta;
     ctx->mta_len = len;
 
