@@ -100,6 +100,7 @@ typedef struct seq_meta {
     mstring g_name;
 } seq_meta;
 
+#pragma acc routine seq
 int seq_meta_lookup(mta_entry *table, int len, uint64_t loc, seq_meta *result) {
     for (int i = 0; i < len; ++i) {
         uint64_t start = table[i].offset;
@@ -186,7 +187,7 @@ void init(context *ctx, int argc, const char **argv) {
     srand48(time(NULL));
 }
 
-
+#pragma acc routine seq
 void remove_n(read_t *r) {
     const char *alpha = "ACGT";
     for (u32 i = 0; i < r->len; ++i) {
