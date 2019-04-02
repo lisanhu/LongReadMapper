@@ -251,7 +251,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
             entry best;
             double score = 0;
-
+#pragma acc loop seq
             for (int iter = 0; iter < sl + gl; ++iter) {
 
                 entry cand[2];

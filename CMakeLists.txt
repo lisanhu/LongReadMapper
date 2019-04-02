@@ -31,8 +31,8 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 	#    message("${CMAKE_CXX_FLAGS_DEBUG}")
 
-	set(CMAKE_CXX_FLAGS "-ta=multicore -Minfo ${CMAKE_CXX_FLAGS}")
-	set(CMAKE_C_FLAGS "-ta=multicore -Minfo ${CMAKE_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "-ta=multicore -Minfo=accel ${CMAKE_CXX_FLAGS}")
+	set(CMAKE_C_FLAGS "-ta=multicore -Minfo=accel ${CMAKE_C_FLAGS}")
 
 	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 		set(CMAKE_CXX_FLAGS "-pg ${CMAKE_CXX_FLAGS}")
