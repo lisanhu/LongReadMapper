@@ -101,7 +101,8 @@ typedef struct seq_meta {
 } seq_meta;
 
 #pragma acc routine seq
-int seq_meta_lookup(mta_entry *table, int len, uint64_t loc, seq_meta *result) {
+int seq_meta_lookup(const mta_entry *table, int len, uint64_t loc, seq_meta *result) {
+#pragma acc loop seq
     for (int i = 0; i < len; ++i) {
         uint64_t start = table[i].offset;
         uint64_t end = start + table[i].seq_len * 2;
@@ -190,6 +191,7 @@ void init(context *ctx, int argc, const char **argv) {
 #pragma acc routine seq
 void remove_n(read_t *r) {
     const char *alpha = "ACGT";
+#pragma acc loop seq
     for (u32 i = 0; i < r->len; ++i) {
         char ch = r->seq[i];
         if (ch == 'N' || ch == 'n') {
@@ -257,7 +259,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
                 entry cand[2];
                 histo *in_iter_histo = histo_init(ctx.histo_cap);
-
+#pragma acc loop seq
                 for (int j = iter; j < r.len - sl; j += sl + gl) {
                     u64 kk = 1, ll = ctx.fmi->length - 1, rr;
 
@@ -265,6 +267,7 @@ static inline int single_end(int argc, const char *argv[]) {
                                 ctx.lch);
 
                     if (rr > 0 && rr < ctx.uninformative_thres) {
+#pragma acc loop seq
                         for (u64 k = kk; k <= ll; ++k) {
                             u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
                                     j;
