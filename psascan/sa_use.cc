@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <omp.h>
 
 void sa_build(const char *fname, long ram_use) {
 	std::string t_fname(fname);
@@ -11,8 +12,7 @@ void sa_build(const char *fname, long ram_use) {
 
 //	long ram_use = 3072L << 20;
 //	long ram_use = 8L << 30;
-	long max_threads = (long)omp_get_max_threads();
-
+	long max_threads = omp_get_max_threads();
 	pSAscan(t_fname, out_fname, gap_fname,
 	        ram_use, max_threads, false);
 }

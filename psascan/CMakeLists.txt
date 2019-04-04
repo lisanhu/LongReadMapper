@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 11)
 add_subdirectory(libdivsufsort)
 
 
-set(SRC_FILES src/psascan_src/utils.cpp src/main.cpp)
+set(SRC_FILES src/psascan_src/utils.cpp src/psascan_src/psascan.cc src/main.cpp)
 
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
@@ -39,7 +39,7 @@ target_include_directories(psascan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsuf
 target_link_libraries(psascan divsufsort divsufsort64)
 
 
-add_library(sa_use sa_use.cc src/psascan_src/utils.cpp)
+add_library(sa_use sa_use.cc src/psascan_src/utils.cpp src/psascan_src/psascan.cc)
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
     target_compile_options(sa_use BEFORE PRIVATE "-fopenmp")
