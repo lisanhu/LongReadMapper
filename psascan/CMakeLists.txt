@@ -34,9 +34,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif ()
 
-add_executable(psascan ${SRC_FILES})
-target_include_directories(psascan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsufsort/include)
-target_link_libraries(psascan divsufsort divsufsort64)
+#add_executable(psascan ${SRC_FILES})
+#target_include_directories(psascan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsufsort/include)
+#target_link_libraries(psascan divsufsort divsufsort64)
 
 
 add_library(sa_use sa_use.cc src/psascan_src/utils.cpp src/psascan_src/psascan.cc)
