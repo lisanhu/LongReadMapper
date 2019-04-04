@@ -40,7 +40,7 @@ void psascan_private::pSAscan(std::string input_filename, std::string output_fil
     long ram_for_threads = n_gap_buffers * gap_buf_size;  // for buffers
     if (ram_use / 5.2L < (long double) (1L << 31))  // for oracle
         ram_for_threads += max_threads * gap_buf_size;
-    else ram_for_threads += ((4.L / 5) * max_threads) * gap_buf_size;
+    else ram_for_threads += ((4L / 5) * max_threads) * gap_buf_size;
     ram_for_threads += max_threads * gap_buf_size;  // for temp
     ram_for_threads +=
             max_threads * (6L << 20);  // for reader/writer buffers
@@ -76,7 +76,7 @@ void psascan_private::pSAscan(std::string input_filename, std::string output_fil
     long stream_max_open_files_estimated = 3L * max_threads + 1;
     long max_open_files_estimated = std::max(merge_max_open_files_estimated,
                                              stream_max_open_files_estimated);
-    rlimit rlimit_res;
+    rlimit rlimit_res{};
     if (!getrlimit(RLIMIT_NOFILE, &rlimit_res) &&
         (long) rlimit_res.rlim_cur < max_open_files_estimated) {
         fprintf(stderr,
