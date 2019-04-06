@@ -22,7 +22,7 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 #    message("${CMAKE_CXX_FLAGS_DEBUG}")
 
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mp")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O4")
+    set(CMAKE_CXX_FLAGS_RELEASE "")
 
 #    if(CMAKE_BUILD_TYPE STREQUAL "Release")
 #        set(CMAKE_C_FLAGS "-O4 ${CMAKE_C_FLAGS}")
@@ -30,10 +30,6 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 #    endif ()
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(CMAKE_C_FLAGS "-O3 ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-endif ()
 
 #add_executable(psascan ${SRC_FILES})
 #target_include_directories(psascan PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/libdivsufsort/include)
