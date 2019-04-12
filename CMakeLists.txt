@@ -29,18 +29,22 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	# using PGI
 	# todo: PGI bug work-around
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O4 ${CMAKE_CXX_FLAGS_RELEASE}")
+	set(CMAKE_C_FLAGS_DEBUG "-pg ${CMAKE_C_FLAGS_DEBUG}")
+	set(CMAKE_C_FLAGS_RELEASE  "-O4 ${CMAKE_C_FLAGS_RELEASE}")
 	#    message("${CMAKE_CXX_FLAGS_DEBUG}")
 
-	set(CMAKE_CXX_FLAGS "-ta=multicore -Minfo=accel ${CMAKE_CXX_FLAGS}")
-	set(CMAKE_C_FLAGS "-ta=multicore -Minfo=accel ${CMAKE_C_FLAGS}")
+	set(ACCTYPE "multicore")
 
-	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-		set(CMAKE_CXX_FLAGS "-pg ${CMAKE_CXX_FLAGS}")
-		set(CMAKE_EXE_LINKER_FLAGS "-pg ${CMAKE_EXE_LINKER_FLAGS}")
-	elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-		set(CMAKE_C_FLAGS "-O4 ${CMAKE_C_FLAGS}")
-		set(CMAKE_CXX_FLAGS "-O4 ${CMAKE_CXX_FLAGS}")
+	if (NOT ACCTYPE)
+		set(ACCTYPE "s")
 	endif ()
+
+	if (NOT ("${ACCTYPE}" STREQUAL "s" OR "${ACCTYPE}" STREQUAL "serial"))
+		set(CMAKE_CXX_FLAGS "-ta=${ACCTYPE} -Minfo=accel ${CMAKE_CXX_FLAGS}")
+		set(CMAKE_C_FLAGS "-ta=${ACCTYPE} -Minfo=accel ${CMAKE_C_FLAGS}")
+	endif ()
+	
 elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 	# using Clang
 	set(CMAKE_CXX_FLAGS "-fopenmp=libomp ${CMAKE_CXX_FLAGS}")

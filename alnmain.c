@@ -29,7 +29,7 @@ void gen_sam_header(mta_entry *mta, int l, FILE *stream) {
         name[m.seq_name.l] = 0;
         fprintf(stream, "@SQ\tSN:%s\tLN:%ld\n", name, m.seq_len);
     }
-    fprintf(stream, "@RG\tID:%s%ld\n", "accaln", rg_id);
+    fprintf(stream, "@RG\tID:%s%ld\tSM:SM_data\n", "accaln", rg_id);
     fprintf(stream, "@PG\tID:%s\tPN:%s\n", "accaln", "accaln");
 }
 
