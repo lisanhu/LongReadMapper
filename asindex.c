@@ -13,6 +13,9 @@ KSEQ_INIT(gzFile, gzread)
 char revc_mapper[256];
 
 
+static inline void _seq_to_upper_case(char *seq, size_t length);
+
+
 
 static mstring ms_from_ks(kstring_t ks) {
     mstring ms = {.l = ks.l, .s = strndup(ks.s, ks.l)};
@@ -57,6 +60,13 @@ static void _dna_replace_n_inplace(char *seq, size_t length) {
 }
 
 
+static void _seq_to_upper_case(char *seq, size_t length) {
+    for (size_t i = 0; i < length; ++i) {
+        if (seq[i] > 0x60) seq[i] -= 0x20;
+    }
+}
+
+
 static void _dna_rev_complementary_inplace(char *seq, size_t length) {
     for (size_t i = 0; i < length; ++i) {
         seq[i] = revc_mapper[seq[i]];
@@ -86,6 +96,7 @@ void create_meta(const char *prefix) {
         /// cat file contents
         char *seqs = strndup(seq->seq.s, seq->seq.l);
 	    _dna_replace_n_inplace(seqs, seq->seq.l);
+        _seq_to_upper_case(seqs, seq->seq.l);
         offset += fwrite(seqs, sizeof(char), seq->seq.l, cfp);
 	    _dna_rev_complementary_inplace(seqs, seq->seq.l);
         offset += fwrite(seqs, sizeof(char), seq->seq.l, cfp);
