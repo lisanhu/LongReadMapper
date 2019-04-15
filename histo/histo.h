@@ -21,7 +21,7 @@ typedef uint32_t u32;
 
 
 typedef struct {
-	u64 key, val;
+	u64 key, val, bucket;
 } entry;
 
 KHASH_MAP_INIT_INT64(64, u64)

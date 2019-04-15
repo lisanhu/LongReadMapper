@@ -33,8 +33,8 @@ inline void histo_destroy(histo *h) {
 }
 
 inline static u64 histo_key_hash(u64 key) {
-//	return key >> 4;
-	return key;
+	return key >> 4;
+//	return key;
 }
 
 inline static void histo_push(histo *h, u64 key, u64 val) {
@@ -45,7 +45,7 @@ inline static void histo_push(histo *h, u64 key, u64 val) {
 		h->cap = cap * 2;
 	}
 
-	entry e = {.key = histo_key_hash(key), .val = val};
+	entry e = {.key = key, .val = val, .bucket = histo_key_hash(key)};
 	h->entries[h->size++] = e;
 }
 
@@ -53,9 +53,10 @@ inline void histo_add(histo *h, u64 key) {
 	u32 size = h->size;
 	bool found = false;
 	for (u32 i = 0; i < size; ++i) {
-		if (h->entries[i].key == histo_key_hash(key)) {
+		if (h->entries[i].bucket == histo_key_hash(key)) {
 			found = true;
 			h->entries[i].val += 1;
+			h->entries[i].key = key < h->entries[i].key ? key : h->entries[i].key;
 		}
 	}
 
@@ -95,26 +96,15 @@ inline u64 histo_find_max(histo *h) {
 }
 
 inline u64 histo_find_2_max(histo *h, entry *store) {
-	store[0].val = store[0].key = 0;
-	store[1].val = store[1].key = 0;
-//	khiter_t k;
-//	for (k = kh_begin(h->kh); k != kh_end(h->kh); ++k) {
-//		if (kh_exist(h->kh, k)) {
-//			u64 key = kh_key(h->kh, k);
-//			u64 val = kh_value(h->kh, k);
-//			if (store[1].val <= val && store[0].val <= val) {
-//				store[0].key = key;
-//				store[0].val = val;
-//			} else if (store[1].val <= val && store[0].val > val) {
-//				store[1].key = key;
-//				store[1].val = val;
-//			}
-//		}
-//	}
+	store[0].bucket = store[0].val = store[0].key = 0;
+    store[1].bucket = store[1].val = store[1].key = 0;
+
 	for (u32 i = 0; i < h->size; ++i) {
 		entry e = h->entries[i];
-		if (store[1].val <= e.val && store[0].val <= e.val) store[0] = e;
-		if (store[1].val <= e.val && store[0].val > e.val) store[1] = e;
+		if (store[1].val < e.val && store[0].val < e.val) {
+		    store[1] = store[0];
+		    store[0] = e;
+		} else if (store[1].val < e.val && store[0].val >= e.val) store[1] = e;
 	}
 	return store[0].val + store[1].val;
 }

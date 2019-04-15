@@ -26,7 +26,7 @@ static mstring ms_from_ks(kstring_t ks) {
 static void _cstr_reverse_inplace(char *s) {
     size_t l = strlen(s);
     char c;
-    for (size_t i = 0; i < l; ++i) {
+    for (size_t i = 0; i < l / 2; ++i) {
         c = s[i];
         s[i] = s[l - i - 1];
         s[l - i - 1] = c;

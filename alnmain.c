@@ -27,19 +27,30 @@ void _rev_comp_in_place(char *seq, uint32_t len) {
             case 'A':
             case 'a':
                 seq[i] = 'T';
+                break;
             case 'C':
             case 'c':
                 seq[i] = 'G';
+                break;
             case 'G':
             case 'g':
                 seq[i] = 'C';
+                break;
             case 'T':
             case 't':
                 seq[i] = 'A';
+                break;
             default:
                 /// should never come here
                 seq[i] = 'N';
+                break;
         }
+    }
+
+    for (uint32_t i = 0; i < len / 2; ++i) {
+        char c = seq[i];
+        seq[i] = seq[len - 1 - i];
+        seq[len - 1 - i] = c;
     }
 }
 
@@ -146,8 +157,9 @@ seq_lookup(const mta_entry *table, int len, uint64_t loc, uint32_t qlen,
             /// the other strand for genome
             result->strand = 1;
             result->g_name = table[i].seq_name;
-            result->off = end - loc - qlen - 1;
+            result->off = end - loc - qlen;
             result->loc = result->off + start;
+            return 1;
         }
     }
     return 0;
@@ -325,7 +337,9 @@ static inline int single_end(int argc, const char *argv[]) {
                         best = cand[0];
                         break;
                     } else {
-                        histo_add(ot_iter_histo, cand[0].key);
+                        if (cand[0].val != 0) {
+                            histo_add(ot_iter_histo, cand[0].key);
+                        }
                     }
                 }
 
@@ -340,7 +354,8 @@ static inline int single_end(int argc, const char *argv[]) {
 
 
             u64 loc = best.key;
-            int limit = (int) (ERROR_RATE * r.len);
+            int limit = (int) (ERROR_RATE * r.len * 2);
+//            int limit = -1;
             seq_meta m;
             int meta_r = seq_lookup(ctx.mta, ctx.mta_len, loc, r.len, &m);
             if (m.strand == 1) {
@@ -348,7 +363,7 @@ static inline int single_end(int argc, const char *argv[]) {
             }
 
 
-            char *cigar = cigar_align(r.seq, r.len, ctx.content + loc, r.len,
+            char *cigar = cigar_align(r.seq, r.len, ctx.content + m.loc, r.len,
                                       &limit);
             result re = {.loc = loc, .off = m.off, .r_off = loc, .CIGAR = cigar,
                     .q_name = strdup(r.name.s), .g_name = strdup(
@@ -356,6 +371,7 @@ static inline int single_end(int argc, const char *argv[]) {
                     .query = strdup(
                             r.seq), .r_name = "*", .ed = limit, .mapq = 255,
                     .valid = (limit >= 0)};
+//                    .valid = true};
 
             if (meta_r == 0) {
                 re.valid = false;
