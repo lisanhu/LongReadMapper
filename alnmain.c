@@ -18,6 +18,31 @@
 const double ERROR_RATE = 0.05;
 
 
+static void _rev_comp_in_place(char *seq, uint32_t len);
+
+void _rev_comp_in_place(char *seq, uint32_t len) {
+    for (uint32_t i = 0; i < len; ++i) {
+        char c = seq[i];
+        switch (c) {
+            case 'A':
+            case 'a':
+                seq[i] = 'T';
+            case 'C':
+            case 'c':
+                seq[i] = 'G';
+            case 'G':
+            case 'g':
+                seq[i] = 'C';
+            case 'T':
+            case 't':
+                seq[i] = 'A';
+            default:
+                /// should never come here
+                seq[i] = 'N';
+        }
+    }
+}
+
 void gen_sam_header(mta_entry *mta, int l, FILE *stream) {
     long rg_id = time(NULL);
     char name[1024];
@@ -98,21 +123,31 @@ int load_mta(const char *path, mta_entry *result) {
 typedef struct seq_meta {
     uint64_t loc, off;
     mstring g_name;
+    uint8_t strand;
 } seq_meta;
 
 #pragma acc routine seq
-int seq_meta_lookup(const mta_entry *table, int len, uint64_t loc, seq_meta *result) {
+int
+seq_lookup(const mta_entry *table, int len, uint64_t loc, uint32_t qlen,
+           seq_meta *result) {
 #pragma acc loop seq
     for (int i = 0; i < len; ++i) {
+        uint64_t sl = table[i].seq_len;
         uint64_t start = table[i].offset;
-        uint64_t end = start + table[i].seq_len * 2;
-        if (loc >= start && loc < end) {
+        uint64_t end = start + sl * 2;
+        if (loc >= start && loc + qlen <= start + sl) {
+            /// the strand for genome
+            result->strand = 0;
             result->g_name = table[i].seq_name;
             result->loc = loc;
-            uint64_t doff = loc - start;
-            uint64_t sl = table[i].seq_len;
-            result->off = doff >= sl ? 2 * sl - doff : doff;
+            result->off = loc - start;
             return 1;
+        } else if (loc >= start + sl && loc + qlen <= end) {
+            /// the other strand for genome
+            result->strand = 1;
+            result->g_name = table[i].seq_name;
+            result->off = end - loc - qlen - 1;
+            result->loc = result->off + start;
         }
     }
     return 0;
@@ -307,7 +342,10 @@ static inline int single_end(int argc, const char *argv[]) {
             u64 loc = best.key;
             int limit = (int) (ERROR_RATE * r.len);
             seq_meta m;
-            int meta_r = seq_meta_lookup(ctx.mta, ctx.mta_len, loc, &m);
+            int meta_r = seq_lookup(ctx.mta, ctx.mta_len, loc, r.len, &m);
+            if (m.strand == 1) {
+                _rev_comp_in_place(r.seq, r.len);
+            }
 
 
             char *cigar = cigar_align(r.seq, r.len, ctx.content + loc, r.len,
