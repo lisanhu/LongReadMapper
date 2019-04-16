@@ -21,6 +21,7 @@ const double ERROR_RATE = 0.05;
 static void _rev_comp_in_place(char *seq, uint32_t len);
 
 void _rev_comp_in_place(char *seq, uint32_t len) {
+#pragma acc loop seq
     for (uint32_t i = 0; i < len; ++i) {
         char c = seq[i];
         switch (c) {
