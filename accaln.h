@@ -92,7 +92,7 @@ typedef struct _context {
 
 void context_destroy(context *ctx);
 
-typedef struct {
+typedef struct result{
 	/// location in the file, offset in BAM format, offset of mate/pair read
 	uint64_t loc, off, r_off;
 	/// CIGAR string, query name, gene name, query quality, query, reference name of mate/pair read

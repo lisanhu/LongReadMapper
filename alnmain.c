@@ -139,6 +139,7 @@ typedef struct seq_meta {
 } seq_meta;
 
 #pragma acc routine seq
+
 int
 seq_lookup(const mta_entry *table, int len, uint64_t loc, uint32_t qlen,
            seq_meta *result) {
@@ -201,7 +202,17 @@ void init(context *ctx, int argc, const char **argv) {
 
     free(path);
     log.mvlog(&log, "ld_params @ %s:%d", __FILE__, __LINE__);
-    params p = read_params("params", ctx);
+    params p;
+    if (argc != 6) p = read_params("params", ctx);
+    else {
+        p.batch_size = strtol(argv[3], NULL, 0);
+        p.seed_len = strtol(argv[4], NULL, 0);
+        p.thres = strtol(argv[5], NULL, 0);
+        log.mvlog(&log, "Current settings:");
+        log.mvlog(&log, "batch_size: %ld", p.batch_size);
+        log.mvlog(&log, "seed_length: %d", p.seed_len);
+        log.mvlog(&log, "non-informative seeds threshold: %d", p.thres);
+    }
     log.mvlog(&log, "ld_params done.");
 
     ctx->batch_size = p.batch_size; // default 1M reads
@@ -237,6 +248,7 @@ void init(context *ctx, int argc, const char **argv) {
 }
 
 #pragma acc routine seq
+
 void remove_n(read_t *r) {
     const char *alpha = "ACGT";
 #pragma acc loop seq
@@ -264,8 +276,9 @@ static inline int single_end(int argc, const char *argv[]) {
     log.mvlog(&log, "Start initialization");
 
     init(&ctx, argc, argv);
-    timer = log.mvlog(&log, "Done initializing, begin loading reference file %s",
-              ctx.genome);
+    timer = log.mvlog(&log,
+                      "Done initializing, begin loading reference file %s",
+                      ctx.genome);
 
     log.mvlog(&log, "Done loading reference in %lfs", time_elapse(timer));
 
@@ -367,16 +380,23 @@ static inline int single_end(int argc, const char *argv[]) {
             char *cigar = cigar_align(r.seq, r.len, ctx.content + m.loc, r.len,
                                       &limit);
             result re = {.loc = loc, .off = m.off, .r_off = loc, .CIGAR = cigar,
-                    .q_name = strdup(r.name.s), .g_name = strdup(
-                            m.g_name.s), .qual = strdup(r.qual),
-                    .query = strdup(
-                            r.seq), .r_name = "*", .ed = limit, .mapq = 255,
+                    .q_name = strdup(r.name.s), .g_name = strdup(m.g_name.s),
+                    .qual = strdup(r.qual), .query = strdup(r.seq),
+                    .r_name = "*", .ed = limit, .mapq = 255,
                     .valid = (limit >= 0)};
+            re.flag = 0;
 //                    .valid = true};
 
             if (meta_r == 0) {
                 re.valid = false;
+                re.flag += 0x4;
+            } else {
+                if (m.strand == 1) {
+                    re.flag += 16;
+                }
             }
+
+
             results[i] = re;
             histo_destroy(ot_iter_histo);
 
@@ -399,6 +419,15 @@ static inline int single_end(int argc, const char *argv[]) {
                         results[i].qual, results[i].ed);
                 free(results[i].CIGAR);
                 valid += 1;
+            } else {
+                fprintf(out_stream,
+                        "%s\t%d\t%s\t%ld\t%d\t%s\t%s\t%ld\t%d\t%s\t%s\tED:I:%d\n",
+                        results[i].q_name, results[i].flag, results[i].g_name,
+                        results[i].off + 1, results[i].mapq, "*",
+                        results[i].r_name, results[i].r_off, 0,
+                        results[i].query,
+                        results[i].qual, results[i].ed);
+                free(results[i].CIGAR);
             }
         }
 //		fclose(out_stream);
@@ -429,12 +458,12 @@ static inline int pair_end(int argc, const char *argv[]) {
 
 int main(int argc, const char **argv) {
 
-    if (argc != 3 && argc != 4) {
+    if (argc != 6 && argc != 3 && argc != 4) {
         usage(argv[0]);
         return -1;
     }
 
-    if (argc == 3) {
+    if (argc == 3 || argc == 6) {
         return single_end(argc, argv);
     }
 
