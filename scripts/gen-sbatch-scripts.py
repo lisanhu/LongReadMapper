@@ -92,10 +92,10 @@ ${{COMMAND}} ${{FA_FILE}} ${{FQ_FILES}} ${{BATCH_SIZE}} ${{SEED_LEN}} ${{THRES}}
 """
     opts = {
     "name": None,
-    "nodes": 1,
-    "ntasks": 1,
-    "cpus": 32,
-    "email": "lisanhu@udel.edu",
+    "nodes": None,
+    "ntasks": None,
+    "cpus": 36,
+    "email": "hcarter@udel.edu",
     "mail_type": "END,FAIL",
     "mem": "200G",
     "time": "20:00:00",
