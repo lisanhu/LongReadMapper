@@ -47,10 +47,10 @@ size_t reads_load(read_t *buf, size_t num, kseq_t *seq) {
 	for (i = 0; i < num && kseq_read(seq) >= 0; ++i) {
 		u64 len = seq->seq.l;
 		read_t r = {.rid = i + 1,
-			  .name = mstring_from(seq->name.s, false),
-			  .seq = mstring_borrow(seq->seq.s, len),
+			  .name = mstring_from(seq->name.s, true),
+			  .seq = mstring_own(seq->seq.s, len),
 			  .len = (u32) len,
-			  .qual = mstring_borrow(seq->qual.s, len)};
+			  .qual = mstring_own(seq->qual.s, len)};
 			  /// rid start with 1, so we can assume seed with rid=0 is end
 		buf[i] = r;
 	}

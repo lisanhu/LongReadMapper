@@ -305,7 +305,7 @@ static inline int single_end(int argc, const char *argv[]) {
                   time_elapse(timer));
 
         log.mvlog(&log, "Begin processing queries");
-#pragma acc parallel loop
+//#pragma acc parallel loop
 //#pragma omp parallel for
         for (u64 i = 0; i < len; ++i) {
             read_t r = reads[i];
@@ -421,7 +421,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
             results[i] = re;
             histo_destroy(ot_iter_histo);
-
+            read_destroy(&r);
         }
 
         log.mvlog(&log, "Done processing current batch, "
