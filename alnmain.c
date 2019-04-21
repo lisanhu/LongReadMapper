@@ -460,9 +460,10 @@ static inline int single_end(int argc, const char *argv[]) {
                     (int)results[i].qual.l, results[i].qual.s,
                     results[i].ed);
             mstring_destroy(&results[i].CIGAR);
-            read_destroy(&reads[i]);
+//            read_destroy(&reads[i]);
         }
 //		fclose(out_stream);
+        reads_destroy(reads, len);
         free(buf);
         clock_gettime(CLOCK_MONOTONIC, &timer);
     }
