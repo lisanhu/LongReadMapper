@@ -500,16 +500,13 @@ params read_params(const char *path, context *ctx) {
     if (fp) {
         fscanf(fp, "%lu %u %u", &result.batch_size, &result.seed_len,
                &result.thres);
+        fclose(fp);
     }
-    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
     mlog log = ctx->log;
     log.mvlog(&log, "Current settings:");
     log.mvlog(&log, "batch_size: %ld", result.batch_size);
     log.mvlog(&log, "seed_length: %d", result.seed_len);
     log.mvlog(&log, "non-informative seeds threshold: %d", result.thres);
-    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
-    fclose(fp);
-    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
 
     return result;
 }
