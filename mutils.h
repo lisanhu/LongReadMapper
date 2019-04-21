@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdio.h>
-#include "../../../../../../usr/lib/gcc/x86_64-linux-gnu/8/include/stdbool.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {

@@ -5,10 +5,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "mutils.h"
 #include "edlib/edlib.h"
-#include "../../../../../../usr/lib/gcc/x86_64-linux-gnu/8/include/stdbool.h"
 
 
 char * cstr_concat(const char *s1, const char *s2) {
