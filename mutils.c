@@ -93,10 +93,10 @@ inline char *cigar_align(const char *qry, int qlen, const char *target, int tlen
 	                                    EDLIB_CIGAR_STANDARD);
 	*limit = align.editDistance;
 	edlibFreeAlignResult(align);
-//	if (*limit == -1) {
-//	    free(cigar);
-//        return strdup("*");
-//    }
+	if (*limit == -1) {
+	    free(cigar);
+        return strdup("*");
+    }
 	return cigar;
 }
 
