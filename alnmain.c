@@ -508,7 +508,7 @@ params read_params(const char *path, context *ctx) {
     log.mvlog(&log, "seed_length: %d", result.seed_len);
     log.mvlog(&log, "non-informative seeds threshold: %d", result.thres);
     fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
-//    fclose(fp);
+    fclose(fp);
     fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
 
     return result;

@@ -124,4 +124,5 @@ void lc_read(const char *path, lc_hash *h) {
 	h->len = len;
 	h->hlen = hlen;
 	h->lc = lc;
+    fclose(inf);
 }
