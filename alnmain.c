@@ -305,7 +305,7 @@ static inline int single_end(int argc, const char *argv[]) {
                   time_elapse(timer));
 
         log.mvlog(&log, "Begin processing queries");
-//#pragma acc parallel loop
+#pragma acc parallel loop
 //#pragma omp parallel for
         for (u64 i = 0; i < len; ++i) {
             read_t r = reads[i];
@@ -393,20 +393,6 @@ static inline int single_end(int argc, const char *argv[]) {
                     .g_name = m.g_name, .qual = r.qual, .query = r.seq,
                     .r_name = mstring_borrow("*", 1), .ed = limit,
                     .mapq = 255, .valid = (limit >= 0), .flag = 0};
-//            result re;
-//            re.loc = loc;
-//            re.off = m.off;
-//            re.r_off = loc;
-//            re.ed = limit;
-//            re.mapq = 255;
-//            re.valid = (limit >= 0);
-//            re.flag = 0;
-//            re.q_name = r.name;
-//            re.g_name = m.g_name;
-//            re.qual = r.qual;
-//            re.query = r.seq;
-//            re.CIGAR = mstring_from(cigar, true);
-//            re.r_name = mstring_borrow("*", 1);
             free(cigar);
 
             if (meta_r == 0) {
