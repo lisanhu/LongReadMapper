@@ -207,17 +207,16 @@ void init(context *ctx, int argc, const char **argv) {
     free(path);
     log.mvlog(&log, "ld_params @ %s:%d", __FILE__, __LINE__);
     params p;
-    if (argc != 6) p = read_params("params", ctx);
+    if (argc != 6) p = read_params("params");
     else {
         p.batch_size = strtol(argv[3], NULL, 0);
         p.seed_len = strtol(argv[4], NULL, 0);
         p.thres = strtol(argv[5], NULL, 0);
-        log.mvlog(&log, "Current settings:");
-        log.mvlog(&log, "batch_size: %ld", p.batch_size);
-        log.mvlog(&log, "seed_length: %d", p.seed_len);
-        log.mvlog(&log, "non-informative seeds threshold: %d", p.thres);
     }
-    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
+    log.mvlog(&log, "Current settings:");
+    log.mvlog(&log, "batch_size: %ld", p.batch_size);
+    log.mvlog(&log, "seed_length: %d", p.seed_len);
+    log.mvlog(&log, "non-informative seeds threshold: %d", p.thres);
     log.mvlog(&log, "ld_params done.");
 
     ctx->batch_size = p.batch_size; // default 1M reads
@@ -437,15 +436,30 @@ static inline int single_end(int argc, const char *argv[]) {
             }
 
             fprintf(out_stream,
-                    "%.*s\t%d\t%.*s\t%ld\t%d\t%*.s\t%.*s\t%ld\t%d\t%.*s\t%.*s\tED:I:%d\n",
+                    "%.*s\t"        //query_name
+                    "%d\t"          //flag
+                    "%.*s\t"        //gene_name
+                    "%ld\t"         //? results[i].off + 1
+                    "%d\t"          //mapping quality
+                    "%.*s\t"        //CIGAR
+                    "%.*s\t"        //??
+                    "%ld\t"         // ?
+                    "%d\t"          //?
+                    "%.*s\t"        //query
+                    "%.*s\t"        //quality string
+                    "ED:I:%d\n",    //comment
                     (int) results[i].q_name.l, results[i].q_name.s,
-                    results[i].flag, (int)results[i].g_name.l,
-                    results[i].g_name.s, results[i].off + 1, results[i].mapq,
+                    results[i].flag,
+                    (int)results[i].g_name.l, results[i].g_name.s,
+                    results[i].off + 1,
+                    results[i].mapq,
                     (int)results[i].CIGAR.l, results[i].CIGAR.s,
                     (int)results[i].r_name.l, results[i].r_name.s,
-                    results[i].r_off, 0, (int)results[i].query.l,
-                    results[i].query.s, (int)results[i].qual.l,
-                    results[i].qual.s, results[i].ed);
+                    results[i].r_off,
+                    0,
+                    (int)results[i].query.l, results[i].query.s,
+                    (int)results[i].qual.l, results[i].qual.s,
+                    results[i].ed);
             mstring_destroy(&results[i].CIGAR);
         }
 //		fclose(out_stream);
@@ -491,7 +505,7 @@ int main(int argc, const char **argv) {
     return pair_end(argc, argv);
 }
 
-params read_params(const char *path, context *ctx) {
+params read_params(const char *path) {
     params result;
     FILE *fp = fopen(path, "r");
     result.thres = 300;
@@ -502,11 +516,6 @@ params read_params(const char *path, context *ctx) {
                &result.thres);
         fclose(fp);
     }
-    mlog log = ctx->log;
-    log.mvlog(&log, "Current settings:");
-    log.mvlog(&log, "batch_size: %ld", result.batch_size);
-    log.mvlog(&log, "seed_length: %d", result.seed_len);
-    log.mvlog(&log, "non-informative seeds threshold: %d", result.thres);
 
     return result;
 }
