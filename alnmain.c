@@ -421,7 +421,6 @@ static inline int single_end(int argc, const char *argv[]) {
 
             results[i] = re;
             histo_destroy(ot_iter_histo);
-            read_destroy(&r);
         }
 
         log.mvlog(&log, "Done processing current batch, "
@@ -461,6 +460,7 @@ static inline int single_end(int argc, const char *argv[]) {
                     (int)results[i].qual.l, results[i].qual.s,
                     results[i].ed);
             mstring_destroy(&results[i].CIGAR);
+            read_destroy(&reads[i]);
         }
 //		fclose(out_stream);
         free(buf);

@@ -28,9 +28,9 @@ char * cstr_concat(const char *s1, const char *s2);
 mstring mstring_from(char *s, bool own);
 #pragma acc routine
 mstring mstring_borrow(char *s, size_t l);
-
 #pragma acc routine
 mstring mstring_own(const char *s, size_t l);
+mstring mstring_clone(mstring ms);
 void mstring_destroy(mstring *ms);
 void mstring_write(mstring ms, FILE *fp);
 size_t mstring_read(mstring *ms, FILE *fp);

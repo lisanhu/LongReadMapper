@@ -115,4 +115,9 @@ mstring mstring_own(const char *s, size_t l) {
     return ms;
 }
 
+mstring mstring_clone(mstring ms) {
+    mstring result = {.s = strndup(ms.s, ms.l), .l = ms.l, .own = true};
+    return result;
+}
+
 
