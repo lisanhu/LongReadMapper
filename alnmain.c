@@ -90,9 +90,10 @@ char *refactor_reads_seq(read_t *reads, size_t l, context *ctx) {
     char *buf = calloc((max_len + 1) * l, sizeof(char));
 
     for (size_t i = 0; i < l; ++i) {
-        strncpy(buf + (max_len + 1) * i, reads[i].seq, reads[i].len);
-        free(reads[i].seq);
-        reads[i].seq = buf + (max_len + 1) * i;
+        strncpy(buf + (max_len + 1) * i, reads[i].seq.s, reads[i].len);
+        mstring_destroy(&reads[i].seq);
+        reads[i].seq = mstring_from(buf + (max_len + 1) * i, false);
+//        reads[i].seq = buf + (max_len + 1) * i;
     }
     return buf;
 }
@@ -122,12 +123,15 @@ int load_mta(const char *path, mta_entry *result) {
     for (int i = 0; i < 65535; ++i) {
         size_t l = mstring_read(&result[i].seq_name, mfp);
         if (l == 0) {
+//            mstring_destroy(&result[i].seq_name);
+            fclose(mfp);
             return i;
         }
 
         fread(&result[i].offset, sizeof(uint64_t), 1, mfp);
         fread(&result[i].seq_len, sizeof(size_t), 1, mfp);
     }
+    fclose(mfp);
     return 0;
 }
 
@@ -213,6 +217,7 @@ void init(context *ctx, int argc, const char **argv) {
         log.mvlog(&log, "seed_length: %d", p.seed_len);
         log.mvlog(&log, "non-informative seeds threshold: %d", p.thres);
     }
+    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
     log.mvlog(&log, "ld_params done.");
 
     ctx->batch_size = p.batch_size; // default 1M reads
@@ -248,14 +253,13 @@ void init(context *ctx, int argc, const char **argv) {
 }
 
 #pragma acc routine seq
-
 void remove_n(read_t *r) {
     const char *alpha = "ACGT";
 #pragma acc loop seq
     for (u32 i = 0; i < r->len; ++i) {
-        char ch = r->seq[i];
+        char ch = r->seq.s[i];
         if (ch == 'N' || ch == 'n') {
-            r->seq[i] = alpha[_dna_rand_ch()];
+            r->seq.s[i] = alpha[_dna_rand_ch()];
         }
     }
 }
@@ -303,6 +307,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
         log.mvlog(&log, "Begin processing queries");
 #pragma acc parallel loop
+//#pragma omp parallel for
         for (u64 i = 0; i < len; ++i) {
             read_t r = reads[i];
             remove_n(&r);  /// todo: is this required?
@@ -324,7 +329,7 @@ static inline int single_end(int argc, const char *argv[]) {
                 for (int j = iter; j < r.len - sl; j += sl + gl) {
                     u64 kk = 1, ll = ctx.fmi->length - 1, rr;
 
-                    rr = lc_aln(r.seq + j, ctx.seed_len, &kk, &ll, ctx.fmi,
+                    rr = lc_aln(r.seq.s + j, ctx.seed_len, &kk, &ll, ctx.fmi,
                                 ctx.lch);
 
                     if (rr > 0 && rr < ctx.uninformative_thres) {
@@ -349,6 +354,7 @@ static inline int single_end(int argc, const char *argv[]) {
                         // reason maybe the rest ratio are supposed to be around error rate
                         // todo: current result only support 1-1, need to think of other cases
                         best = cand[0];
+                        histo_destroy(in_iter_histo);
                         break;
                     } else {
                         if (cand[0].val != 0) {
@@ -373,19 +379,36 @@ static inline int single_end(int argc, const char *argv[]) {
             seq_meta m;
             int meta_r = seq_lookup(ctx.mta, ctx.mta_len, loc, r.len, &m);
             if (m.strand == 1) {
-                _rev_comp_in_place(r.seq, r.len);
+                _rev_comp_in_place(r.seq.s, r.len);
             }
 
 
-            char *cigar = cigar_align(r.seq, r.len, ctx.content + m.loc, r.len,
+            char *cigar = cigar_align(r.seq.s, r.len, ctx.content + m.loc,
+                                      r.len,
                                       &limit);
-            result re = {.loc = loc, .off = m.off, .r_off = loc, .CIGAR = cigar,
-                    .q_name = strdup(r.name.s), .g_name = strdup(m.g_name.s),
-                    .qual = strdup(r.qual), .query = strdup(r.seq),
-                    .r_name = "*", .ed = limit, .mapq = 255,
-                    .valid = (limit >= 0)};
-            re.flag = 0;
-//                    .valid = true};
+            /// todo: The query field may be different from original read
+            /// because we use replace N in the reads and the mstring will
+            /// update the original read data
+            result re = {.loc = loc, .off = m.off, .r_off = loc,
+                    .CIGAR = mstring_from(cigar, true), .q_name = r.name,
+                    .g_name = m.g_name, .qual = r.qual, .query = r.seq,
+                    .r_name = mstring_borrow("*", 1), .ed = limit,
+                    .mapq = 255, .valid = (limit >= 0), .flag = 0};
+//            result re;
+//            re.loc = loc;
+//            re.off = m.off;
+//            re.r_off = loc;
+//            re.ed = limit;
+//            re.mapq = 255;
+//            re.valid = (limit >= 0);
+//            re.flag = 0;
+//            re.q_name = r.name;
+//            re.g_name = m.g_name;
+//            re.qual = r.qual;
+//            re.query = r.seq;
+//            re.CIGAR = mstring_from(cigar, true);
+//            re.r_name = mstring_borrow("*", 1);
+            free(cigar);
 
             if (meta_r == 0) {
                 re.valid = false;
@@ -410,30 +433,28 @@ static inline int single_end(int argc, const char *argv[]) {
         /// step 4: SAM generation
         for (int i = 0; i < len; ++i) {
             if (results[i].valid) {
-                fprintf(out_stream,
-                        "%s\t%d\t%s\t%ld\t%d\t%s\t%s\t%ld\t%d\t%s\t%s\tED:I:%d\n",
-                        results[i].q_name, results[i].flag, results[i].g_name,
-                        results[i].off + 1, results[i].mapq, results[i].CIGAR,
-                        results[i].r_name, results[i].r_off, 0,
-                        results[i].query,
-                        results[i].qual, results[i].ed);
-                free(results[i].CIGAR);
                 valid += 1;
-            } else {
-                fprintf(out_stream,
-                        "%s\t%d\t%s\t%ld\t%d\t%s\t%s\t%ld\t%d\t%s\t%s\tED:I:%d\n",
-                        results[i].q_name, results[i].flag, results[i].g_name,
-                        results[i].off + 1, results[i].mapq, "*",
-                        results[i].r_name, results[i].r_off, 0,
-                        results[i].query,
-                        results[i].qual, results[i].ed);
-                free(results[i].CIGAR);
             }
+
+            fprintf(out_stream,
+                    "%.*s\t%d\t%.*s\t%ld\t%d\t%*.s\t%.*s\t%ld\t%d\t%.*s\t%.*s\tED:I:%d\n",
+                    (int) results[i].q_name.l, results[i].q_name.s,
+                    results[i].flag, (int)results[i].g_name.l,
+                    results[i].g_name.s, results[i].off + 1, results[i].mapq,
+                    (int)results[i].CIGAR.l, results[i].CIGAR.s,
+                    (int)results[i].r_name.l, results[i].r_name.s,
+                    results[i].r_off, 0, (int)results[i].query.l,
+                    results[i].query.s, (int)results[i].qual.l,
+                    results[i].qual.s, results[i].ed);
+            mstring_destroy(&results[i].CIGAR);
         }
 //		fclose(out_stream);
         free(buf);
         clock_gettime(CLOCK_MONOTONIC, &timer);
     }
+
+    free(reads);
+    free(results);
 
 
     log.mvlog(&log, "Done aligning");
@@ -480,11 +501,15 @@ params read_params(const char *path, context *ctx) {
         fscanf(fp, "%lu %u %u", &result.batch_size, &result.seed_len,
                &result.thres);
     }
-
+    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
     mlog log = ctx->log;
     log.mvlog(&log, "Current settings:");
     log.mvlog(&log, "batch_size: %ld", result.batch_size);
     log.mvlog(&log, "seed_length: %d", result.seed_len);
     log.mvlog(&log, "non-informative seeds threshold: %d", result.thres);
+    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
+//    fclose(fp);
+    fprintf(stderr, "here %s:%d\n", __FILE__, __LINE__);
+
     return result;
 }

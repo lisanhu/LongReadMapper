@@ -38,8 +38,7 @@ typedef uint32_t u32;
 * Definition of class read_t
 */
 typedef struct {
-	char *seq, *qual;
-	mstring name;
+	mstring seq, qual, name;
 	size_t rid;
 	u32 len;
 } read_t;
@@ -96,7 +95,7 @@ typedef struct result{
 	/// location in the file, offset in BAM format, offset of mate/pair read
 	uint64_t loc, off, r_off;
 	/// CIGAR string, query name, gene name, query quality, query, reference name of mate/pair read
-	char *CIGAR, *q_name, *g_name, *qual, *query, *r_name;
+	mstring CIGAR, q_name, g_name, qual, query, r_name;
 	int ed, mapq, flag;
 	bool valid;
 } result;

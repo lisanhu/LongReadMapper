@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdio.h>
+#include "../../../../../../usr/lib/gcc/x86_64-linux-gnu/8/include/stdbool.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,11 +20,17 @@ extern "C" {
 typedef struct mstring {
     uint64_t l;
     char *s;
+    bool own;
 } mstring;
 
 char * cstr_concat(const char *s1, const char *s2);
+#pragma acc routine
+mstring mstring_from(char *s, bool own);
+#pragma acc routine
+mstring mstring_borrow(char *s, size_t l);
 
-mstring mstring_from(char *s);
+#pragma acc routine
+mstring mstring_own(const char *s, size_t l);
 void mstring_destroy(mstring *ms);
 void mstring_write(mstring ms, FILE *fp);
 size_t mstring_read(mstring *ms, FILE *fp);

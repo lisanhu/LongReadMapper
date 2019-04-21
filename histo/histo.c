@@ -30,6 +30,7 @@ inline void histo_destroy(histo *h) {
 	}
 	kh_destroy(64, h->kh);
 	h->cap = h->size = 0;
+    free(h);
 }
 
 inline static u64 histo_key_hash(u64 key) {

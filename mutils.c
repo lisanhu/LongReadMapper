@@ -8,6 +8,7 @@
 
 #include "mutils.h"
 #include "edlib/edlib.h"
+#include "../../../../../../usr/lib/gcc/x86_64-linux-gnu/8/include/stdbool.h"
 
 
 char * cstr_concat(const char *s1, const char *s2) {
@@ -18,15 +19,16 @@ char * cstr_concat(const char *s1, const char *s2) {
     return s;
 }
 
-
-mstring mstring_from(char *s) {
-    mstring ms = {.s = strdup(s), .l = strlen(s)};
-    return ms;
+#pragma acc routine
+mstring mstring_from(char *s, bool own) {
+    size_t l = strlen(s);
+    if (own) return mstring_own(s, l);
+    else return mstring_borrow(s, l);
 }
 
 
 void mstring_destroy(mstring *ms) {
-    if (ms->s) {
+    if (ms->s && ms->own) {
         free(ms->s);
         ms->s = NULL;
     }
@@ -49,10 +51,13 @@ void mstring_write(mstring ms, FILE *fp) {
 
 
 size_t mstring_read(mstring *ms, FILE *fp) {
-    fread(&ms->l, sizeof(uint64_t), 1, fp);
+    size_t l = fread(&ms->l, sizeof(uint64_t), 1, fp);
+    if (l == 0)
+        return l;
     ms->s = malloc((ms->l + 1) * sizeof(char));
-    size_t l = fread(ms->s, sizeof(char), ms->l, fp);
+    l = fread(ms->s, sizeof(char), ms->l, fp);
     ms->s[ms->l] = '\0';
+    ms->own = true;
 	return l;
 }
 
@@ -76,6 +81,7 @@ const char * load_file(const char *path, uint64_t *len) {
 	char *buf = malloc(*len + 1);
 	buf[*len] = '\0';
 	fread(buf, sizeof(char), *len, fp);
+    fclose(fp);
 	return buf;
 }
 
@@ -87,7 +93,26 @@ inline char *cigar_align(const char *qry, int qlen, const char *target, int tlen
 	                                    EDLIB_CIGAR_STANDARD);
 	*limit = align.editDistance;
 	edlibFreeAlignResult(align);
+	if (*limit == -1) {
+	    free(cigar);
+        return strdup("*");
+    }
 	return cigar;
+}
+
+#pragma acc routine
+mstring mstring_borrow(char *s, size_t l) { // NOLINT(readability-non-const-parameter)
+    /// todo: report this problem to CLion or Clang
+    /// why is this s could be const? ms contains the reference to s and
+    /// can be used to modify s in the future
+    mstring ms = {.s = s, .l = l, .own = false};
+    return ms;
+}
+
+#pragma acc routine
+mstring mstring_own(const char *s, size_t l) {
+    mstring ms = {.s = strdup(s), .l = l, .own = true};
+    return ms;
 }
 
 
