@@ -20,7 +20,7 @@ extern "C" {
 typedef struct mstring {
     uint64_t l;
     char *s;
-    bool own;
+    short own;
 } mstring;
 
 char * cstr_concat(const char *s1, const char *s2);
