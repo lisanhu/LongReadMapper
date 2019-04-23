@@ -395,9 +395,10 @@ static inline int single_end(int argc, const char *argv[]) {
                     .mapq = 255, .valid = (limit >= 0), .flag = 0};
             free(cigar);
 
-            if (meta_r == 0) {
+            if (meta_r == 0 || limit == -1) {
                 re.valid = false;
                 re.flag += 0x4;
+                re.mapq = 0;
             } else {
                 if (m.strand == 1) {
                     re.flag += 16;
@@ -440,7 +441,8 @@ static inline int single_end(int argc, const char *argv[]) {
                     results[i].mapq,
                     (int)results[i].CIGAR.l, results[i].CIGAR.s,
                     (int)results[i].r_name.l, results[i].r_name.s,
-                    results[i].r_off,
+//                    results[i].r_off,
+                    0L,
                     0,
                     (int)results[i].query.l, results[i].query.s,
                     (int)results[i].qual.l, results[i].qual.s,
