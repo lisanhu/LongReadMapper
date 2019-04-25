@@ -6,17 +6,8 @@
 
 #include "histo.h"
 
-// shorthand way to get the key from hashtable or defVal if not found
-#define kh_get_val(kname, hash, key, defVal) ({k=kh_get(kname, hash, key);(k!=kh_end(hash)?kh_val(hash,k):defVal);})
-
-// shorthand way to set value in hash with single line command.  Returns value
-// returns 0=replaced existing item, 1=bucket empty (new key), 2-adding element previously deleted
-#define kh_set(kname, hash, key, val) ({int ret; k = kh_put(kname, hash,key,&ret); kh_value(hash,k) = val; ret;})
-
 inline histo *histo_init(u32 cap) {
-//	KHASH_INIT(histo, u64, u64)
 	histo *his = malloc(sizeof(histo));
-	his->kh = kh_init(64);
 	his->cap = cap;
 	his->size = 0;
 	his->entries = malloc(sizeof(entry) * cap);
@@ -28,13 +19,12 @@ inline void histo_destroy(histo *h) {
 		free(h->entries);
 		h->entries = NULL;
 	}
-	kh_destroy(64, h->kh);
 	h->cap = h->size = 0;
     free(h);
 }
 
 inline static u64 histo_key_hash(u64 key) {
-	return key >> 4;
+	return key >> 4U;
 //	return key;
 }
 
@@ -64,10 +54,6 @@ inline void histo_add(histo *h, u64 key) {
 	if (!found) {
 		histo_push(h, key, 1);
 	}
-//	khiter_t k;
-//	u64 ret = kh_get_val(64, h->kh, key, 0);
-//	ret += 1;
-//	kh_set(64, h->kh, key, ret);
 }
 
 inline u64 histo_get(histo *h, u64 key) {

@@ -97,7 +97,7 @@ typedef struct result{
 	/// CIGAR string, query name, gene name, query quality, query, reference name of mate/pair read
 	mstring CIGAR, q_name, g_name, qual, query, r_name;
 	int ed, mapq, flag;
-	bool valid;
+    int valid;
 } result;
 
 

@@ -305,8 +305,11 @@ static inline int single_end(int argc, const char *argv[]) {
                   time_elapse(timer));
 
         log.mvlog(&log, "Begin processing queries");
-//#pragma acc parallel loop
-#pragma omp parallel for
+
+        char **cigars = malloc(len * sizeof(char *));
+
+#pragma acc parallel loop
+//#pragma omp parallel for
         for (u64 i = 0; i < len; ++i) {
             read_t r = reads[i];
             remove_n(&r);  /// todo: is this required?
@@ -382,18 +385,41 @@ static inline int single_end(int argc, const char *argv[]) {
             }
 
 
-            char *cigar = cigar_align(r.seq.s, r.len, ctx.content + m.loc,
+            cigars[i] = cigar_align(r.seq.s, r.len, ctx.content + m.loc,
                                       r.len,
                                       &limit);
             /// todo: The query field may be different from original read
             /// because we use replace N in the reads and the mstring will
             /// update the original read data
             result re = {.loc = loc, .off = m.off, .r_off = loc,
-                    .CIGAR = mstring_from(cigar, true), .q_name = r.name,
+                    .CIGAR = mstring_from(cigars[i], false), .q_name = r.name,
                     .g_name = m.g_name, .qual = r.qual, .query = r.seq,
                     .r_name = mstring_borrow("*", 1), .ed = limit,
                     .mapq = 255, .valid = (limit >= 0), .flag = 0};
-            free(cigar);
+//            results[i].loc = loc;
+//            results[i].off = m.off;
+//            results[i].CIGAR = mstring_from(cigar, false);
+//            results[i].q_name = r.name;
+//            results[i].g_name = m.g_name;
+//            results[i].qual = r.qual;
+//            results[i].query = r.seq;
+//            results[i].r_name = mstring_borrow("*", 1);
+//            results[i].ed = limit;
+//            results[i].mapq = 255;
+//            results[i].valid = (limit >= 0);
+//            results[i].flag = 0;
+//            free(cigar);
+//            results[i].CIGAR.own = true;
+
+//            if (meta_r == 0 || limit == -1) {
+//                results[i].valid = false;
+//                results[i].flag += 0x4;
+//                results[i].mapq = 0;
+//            } else {
+//                if (m.strand == 1) {
+//                    results[i].flag += 16;
+//                }
+//            }
 
             if (meta_r == 0 || limit == -1) {
                 re.valid = false;
@@ -404,9 +430,8 @@ static inline int single_end(int argc, const char *argv[]) {
                     re.flag += 16;
                 }
             }
-
-
             results[i] = re;
+
             histo_destroy(ot_iter_histo);
         }
 
@@ -415,6 +440,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
 
         FILE *out_stream = stdout;
+        setvbuf(out_stream, NULL, _IOFBF, 4194304); // 4MB buffer
         /// step 4: SAM generation
         for (int i = 0; i < len; ++i) {
             if (results[i].valid) {
@@ -450,7 +476,13 @@ static inline int single_end(int argc, const char *argv[]) {
             mstring_destroy(&results[i].CIGAR);
 //            read_destroy(&reads[i]);
         }
+        fflush(out_stream);
 //		fclose(out_stream);
+        for (int i = 0; i < len; ++i) {
+            free(cigars[i]);
+        }
+        free(cigars);
+//        fprintf(stderr, "Kill the double free!\n");
         reads_destroy(reads, len);
         free(buf);
         clock_gettime(CLOCK_MONOTONIC, &timer);

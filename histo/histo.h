@@ -13,8 +13,6 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "khash.h"
-
 
 typedef uint64_t u64;
 typedef uint32_t u32;
@@ -24,13 +22,10 @@ typedef struct {
 	u64 key, val, bucket;
 } entry;
 
-KHASH_MAP_INIT_INT64(64, u64)
 
 typedef struct {
 	entry *entries;
 	u32 cap, size, maxi, smaxi; // max id and second max id
-//	khiter_t k;
-	khash_t(64) *kh;
 } histo;
 
 
