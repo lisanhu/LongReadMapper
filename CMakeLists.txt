@@ -41,8 +41,8 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	endif ()
 
 	if (NOT ("${ACCTYPE}" STREQUAL "s" OR "${ACCTYPE}" STREQUAL "serial"))
-		set(CMAKE_CXX_FLAGS "-ta=${ACCTYPE} -Minfo=accel ${CMAKE_CXX_FLAGS}")
-		set(CMAKE_C_FLAGS "-ta=${ACCTYPE} -Minfo=accel ${CMAKE_C_FLAGS}")
+		set(CMAKE_CXX_FLAGS "-ta=${ACCTYPE} -Minfo ${CMAKE_CXX_FLAGS}")
+		set(CMAKE_C_FLAGS "-ta=${ACCTYPE} -Minfo ${CMAKE_C_FLAGS}")
 	endif ()
 	
 elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")

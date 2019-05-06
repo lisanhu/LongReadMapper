@@ -322,12 +322,12 @@ static inline int single_end(int argc, const char *argv[]) {
 
             entry best;
             double score = 0;
-#pragma acc loop seq
+//#pragma acc loop seq
             for (int iter = 0; iter < sl + gl; ++iter) {
 
                 entry cand[2];
                 histo *in_iter_histo = histo_init(ctx.histo_cap);
-#pragma acc loop seq
+//#pragma acc loop seq
                 for (int j = iter; j < r.len - sl; j += sl + gl) {
                     u64 kk = 1, ll = ctx.fmi->length - 1, rr;
 
@@ -335,7 +335,7 @@ static inline int single_end(int argc, const char *argv[]) {
                                 ctx.lch);
 
                     if (rr > 0 && rr < ctx.uninformative_thres) {
-#pragma acc loop seq
+//#pragma acc loop seq
                         for (u64 k = kk; k <= ll; ++k) {
                             u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
                                     j;
@@ -383,7 +383,6 @@ static inline int single_end(int argc, const char *argv[]) {
             if (m.strand == 1) {
                 _rev_comp_in_place(r.seq.s, r.len);
             }
-
 
             cigars[i] = cigar_align(r.seq.s, r.len, ctx.content + m.loc,
                                       r.len,
