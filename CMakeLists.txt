@@ -10,6 +10,7 @@ find_package(ZLIB REQUIRED)
 add_subdirectory(psascan)
 add_subdirectory(edlib)
 add_subdirectory(mlog)
+add_subdirectory(gact)
 
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
 	# using GCC
@@ -67,7 +68,7 @@ target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort)
 
 
 add_executable(accaln accaln.c alnmain.c histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c)
-target_link_libraries(accaln mlog edlib sa_use divsufsort64 divsufsort)
+target_link_libraries(accaln mlog edlib sa_use divsufsort64 divsufsort gact)
 
 if (ZLIB_FOUND)
 	include_directories(${ZLIB_INCLUDE_DIRS})

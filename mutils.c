@@ -9,6 +9,7 @@
 
 #include "mutils.h"
 #include "edlib/edlib.h"
+#include "gact/gact.h"
 
 
 char * cstr_concat(const char *s1, const char *s2) {
@@ -87,17 +88,31 @@ const char * load_file(const char *path, uint64_t *len) {
 
 inline char *cigar_align(const char *qry, int qlen, const char *target, int tlen,
                   int *limit) {
-	EdlibAlignResult align = edlibAlign(qry, qlen,target, tlen,
-			edlibNewAlignConfig(*limit, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
-	char *cigar = edlibAlignmentToCigar(align.alignment, align.alignmentLength,
-	                                    EDLIB_CIGAR_STANDARD);
-	*limit = align.editDistance;
-	edlibFreeAlignResult(align);
-	if (*limit == -1) {
-	    free(cigar);
+//	EdlibAlignResult align = edlibAlign(qry, qlen,target, tlen,
+//			edlibNewAlignConfig(*limit, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
+//	char *cigar = edlibAlignmentToCigar(align.alignment, align.alignmentLength,
+//	                                    EDLIB_CIGAR_STANDARD);
+//	*limit = align.editDistance;
+//	edlibFreeAlignResult(align);
+//	if (*limit == -1) {
+//	    free(cigar);
+//        return strdup("*");
+//    }
+//	return cigar;
+
+    mmstring q = ms_borrow((char *) qry, qlen);
+    mmstring d = ms_borrow((char *) target, tlen);
+    printf("%d %.*s\n", qlen, qlen, qry);
+    printf("%d %.*s\n", tlen, tlen, target);
+    printf("------------------------\n");
+    gact_align r = simple_gact(q, d);
+    *limit = r.tscore;
+    char *cigar = gact_cigar(&r, q.l);
+    if (*limit == -1) {
+        free(cigar);
         return strdup("*");
     }
-	return cigar;
+    return cigar;
 }
 
 #pragma acc routine
