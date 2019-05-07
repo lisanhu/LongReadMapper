@@ -64,7 +64,7 @@ endif()
 
 add_executable(accidx asindex.c mutils.c mutils.h fmidx/fmidx.c
 		fmidx/fmidx.h lchash/lchash.c lchash/lchash.h)
-target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort)
+target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort gact)
 
 
 add_executable(accaln accaln.c alnmain.c histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c)
