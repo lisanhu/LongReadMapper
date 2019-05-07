@@ -102,17 +102,14 @@ inline char *cigar_align(const char *qry, int qlen, const char *target, int tlen
 
     mmstring q = ms_borrow((char *) qry, qlen);
     mmstring d = ms_borrow((char *) target, tlen);
-//    printf("%d %.*s\n", qlen, qlen, qry);
-//    printf("%d %.*s\n", tlen, tlen, target);
-//    printf("------------------------\n");
     gact_align r = simple_gact(q, d);
-//    *limit = r.tscore;
-//    char *cigar = gact_cigar(&r, q.l);
-//    if (*limit == -1) {
-//        free(cigar);
-//        return strdup("*");
-//    }
-//    return cigar;
+    *limit = r.tscore;
+    char *cigar = gact_cigar(&r, q.l);
+    if (*limit == -1) {
+        free(cigar);
+        return strdup("*");
+    }
+    return cigar;
     *limit = -1;
     return strdup("*");
 }
