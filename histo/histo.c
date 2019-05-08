@@ -25,7 +25,6 @@ inline void histo_destroy(histo *h) {
 
 inline static u64 histo_key_hash(u64 key) {
 	return key >> 4U;
-//	return key;
 }
 
 inline static void histo_push(histo *h, u64 key, u64 val) {

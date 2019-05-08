@@ -76,6 +76,6 @@ if (ZLIB_FOUND)
 	target_link_libraries(accaln ${ZLIB_LIBRARIES})
 endif (ZLIB_FOUND)
 
-
+#add_subdirectory(test)
 #add_executable(test test/play.c logger/logger.c ../mutils.c)
 #target_link_libraries(test edlib)

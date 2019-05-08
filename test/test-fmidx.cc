@@ -6,9 +6,9 @@
 #include <cstdlib>
 
 #include "catch.hpp"
-#include "../fmidx/fmidx.h"
-#include "../psascan/sa_use.h"
-#include "../mutils.h"
+#include "fmidx/fmidx.h"
+#include "psascan/sa_use.h"
+#include "mutils.h"
 
 TEST_CASE("fmindex tests", "[fmidx]") {
 	dna_fmi fmi;
@@ -66,4 +66,53 @@ TEST_CASE("sa_build strange output", "[sa_build]") {
 	sa_build("input2.txt", 2L << 30);
 	fclose(nfp);
 	stderr = err;
+}
+
+static void  _build_csa(dna_fmi *idx, int *occ, int *c, const int *sa, size_t l);
+
+TEST_CASE("Test CSA", "[sa_build]") {
+    printf("Testing CSA\n");
+    dna_fmi fmi;
+    fmi.bwt = strdup("ard$rcaaaabb");
+    int c_tab[128];
+    size_t l = strlen(fmi.bwt);
+    c_tab['$'] = 0;
+    c_tab['a'] = 1;
+    c_tab['b'] = 6;
+    c_tab['c'] = 8;
+    c_tab['d'] = 9;
+    c_tab['r'] = 10;
+
+    int o_tab[72] = {0, 1, 0, 0, 0, 0,
+                     0, 1, 0, 0, 0, 1,
+                     0, 1, 0, 0, 1, 1,
+                     1, 1, 0, 0, 1, 1,
+                     1, 1, 0, 0, 1, 2,
+                     1, 1, 0, 1, 1, 2,
+                     1, 2, 0, 1, 1, 2,
+                     1, 3, 0, 1, 1, 2,
+                     1, 4, 0, 1, 1, 2,
+                     1, 5, 0, 1, 1, 2,
+                     1, 5, 1, 1, 1, 2,
+                     1, 5, 2, 1, 1, 2};
+
+    int sa[] = {11, 10, 7, 0, 3, 5, 8, 1, 4, 6, 9, 2};
+
+    printf("Start building CSA\n");
+    fmi.csa_ratio = 32;
+    _build_csa(&fmi, o_tab, c_tab, sa, l);
+    for (int i = 0; i < l; ++i) {
+        uint64_t si = csa_access(&fmi, i);
+        CHECK(si == sa[i]);
+    }
+}
+
+void _build_csa(dna_fmi *idx, int *occ, int *c, const int *sa, size_t l) {
+    size_t csa_l = l / idx->csa_ratio + 1;
+    idx->csa = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * csa_l));
+
+    for (uint64_t i = 0; i < csa_l; ++i) {
+        uint64_t si = sa[i * idx->csa_ratio];
+        idx->csa[i] = si;
+    }
 }
