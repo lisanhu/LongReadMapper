@@ -14,6 +14,7 @@
 #include "edlib/edlib.h"
 #include "alnmain.h"
 
+#define CHUNK_SIZE 10000
 
 const double ERROR_RATE = 0.05;
 
@@ -308,130 +309,145 @@ static inline int single_end(int argc, const char *argv[]) {
 
         char **cigars = malloc(len * sizeof(char *));
 
-#pragma acc parallel loop
+//#pragma acc parallel loop
 //#pragma omp parallel for
-        for (u64 i = 0; i < len; ++i) {
-            read_t r = reads[i];
-            remove_n(&r);  /// todo: is this required?
-            results[i].valid = false;
-
-
-            histo *ot_iter_histo = histo_init(ctx.histo_cap);
-            const int sl = ctx.seed_len; // todo: seed length should be further computed
-            const int gl = 1;   // todo: gap length should be further computed
-
-            entry best;
-            double score = 0;
-//#pragma acc loop seq
-            for (int iter = 0; iter < sl + gl; ++iter) {
-
-                entry cand[2];
-                histo *in_iter_histo = histo_init(ctx.histo_cap);
-//#pragma acc loop seq
-                for (int j = iter; j < r.len - sl; j += sl + gl) {
-                    u64 kk = 1, ll = ctx.fmi->length - 1, rr;
-
-                    rr = lc_aln(r.seq.s + j, ctx.seed_len, &kk, &ll, ctx.fmi,
-                                ctx.lch);
-
-                    if (rr > 0 && rr < ctx.uninformative_thres) {
-//#pragma acc loop seq
-                        for (u64 k = kk; k <= ll; ++k) {
-                            u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
-                                    j;
-                            histo_add(in_iter_histo, l);
+        entry best[CHUNK_SIZE];
+        for (u64 i = 0; i < len; i += CHUNK_SIZE) {
+#pragma acc parallel loop independent
+            for (u64 chunk_i = 0; chunk_i < CHUNK_SIZE && chunk_i+i < len; ++chunk_i) {
+    
+                read_t r = reads[i+chunk_i];
+                remove_n(&r);  /// todo: is this required?
+                results[i+chunk_i].valid = false;
+    
+    
+                histo *ot_iter_histo = histo_init(ctx.histo_cap);
+                const int sl = ctx.seed_len; // todo: seed length should be further computed
+                const int gl = 1;   // todo: gap length should be further computed
+    
+                double score = 0;
+    //#pragma acc loop seq
+                for (int iter = 0; iter < sl + gl; ++iter) {
+    
+                    entry cand[2];
+                    histo *in_iter_histo = histo_init(ctx.histo_cap);
+    //#pragma acc loop seq
+                    for (int j = iter; j < r.len - sl; j += sl + gl) {
+                        u64 kk = 1, ll = ctx.fmi->length - 1, rr;
+    
+                        rr = lc_aln(r.seq.s + j, ctx.seed_len, &kk, &ll, ctx.fmi,
+                                    ctx.lch);
+    
+                        if (rr > 0 && rr < ctx.uninformative_thres) {
+    //#pragma acc loop seq
+                            for (u64 k = kk; k <= ll; ++k) {
+                                u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
+                                        j;
+                                histo_add(in_iter_histo, l);
+                            }
                         }
                     }
-                }
-
-                int num_seeds = r.len / (sl + gl);
-
-                if (num_seeds > 0) {
-                    u64 v = histo_find_2_max(in_iter_histo, cand);
-                    score = (double) v / num_seeds;
-
-//					double score = (double) v / num_seeds;
-                    if (score >
-                        0.6) { // todo: think of reasoning behind this threshold
-                        // reason maybe the rest ratio are supposed to be around error rate
-                        // todo: current result only support 1-1, need to think of other cases
-                        best = cand[0];
-                        histo_destroy(in_iter_histo);
-                        break;
-                    } else {
-                        if (cand[0].val != 0) {
-                            histo_add(ot_iter_histo, cand[0].key);
+    
+                    int num_seeds = r.len / (sl + gl);
+    
+                    if (num_seeds > 0) {
+                        u64 v = histo_find_2_max(in_iter_histo, cand);
+                        score = (double) v / num_seeds;
+    
+    //					double score = (double) v / num_seeds;
+                        if (score >
+                            0.6) { // todo: think of reasoning behind this threshold
+                            // reason maybe the rest ratio are supposed to be around error rate
+                            // todo: current result only support 1-1, need to think of other cases
+                            best[chunk_i] = cand[0];
+                            histo_destroy(in_iter_histo);
+                            break;
+                        } else {
+                            if (cand[0].val != 0) {
+                                histo_add(ot_iter_histo, cand[0].key);
+                            }
                         }
                     }
+    
+                    if (iter == sl + gl - 1) {
+                        // last iteration
+                        u64 v = histo_find_2_max(ot_iter_histo, cand);
+                        best[chunk_i] = cand[0];
+                    }
+    
+                    histo_destroy(in_iter_histo);
+                }
+                histo_destroy(ot_iter_histo);
+            }
+		// START PARALLELIZATION HERE 
+            u64 loc[CHUNK_SIZE];
+            seq_meta m[CHUNK_SIZE];
+            int limit[CHUNK_SIZE];
+            int meta_r[CHUNK_SIZE];
+#pragma acc parallel loop independent
+            for (u64 chunk_i = 0; chunk_i < CHUNK_SIZE && chunk_i + i< len; ++chunk_i) {
+                read_t r = reads[i+chunk_i];
+                loc[chunk_i] = best[chunk_i].key;
+                limit[chunk_i] = (int) (ERROR_RATE * r.len * 2);
+//                int limit = -1;
+                meta_r[chunk_i] = seq_lookup(ctx.mta, ctx.mta_len, loc[chunk_i], r.len, &m[chunk_i]);
+                if (m[chunk_i].strand == 1) {
+                    _rev_comp_in_place(r.seq.s, r.len);
                 }
 
-                if (iter == sl + gl - 1) {
-                    // last iteration
-                    u64 v = histo_find_2_max(ot_iter_histo, cand);
-                    best = cand[0];
-                }
-
-                histo_destroy(in_iter_histo);
+                cigars[chunk_i+i] = cigar_align(r.seq.s, r.len, ctx.content + m[chunk_i].loc,
+                                          r.len,
+                                          &limit[chunk_i]);
             }
-
-
-            u64 loc = best.key;
-            int limit = (int) (ERROR_RATE * r.len * 2);
-//            int limit = -1;
-            seq_meta m;
-            int meta_r = seq_lookup(ctx.mta, ctx.mta_len, loc, r.len, &m);
-            if (m.strand == 1) {
-                _rev_comp_in_place(r.seq.s, r.len);
-            }
-
-            cigars[i] = cigar_align(r.seq.s, r.len, ctx.content + m.loc,
-                                      r.len,
-                                      &limit);
             /// todo: The query field may be different from original read
             /// because we use replace N in the reads and the mstring will
             /// update the original read data
-            result re = {.loc = loc, .off = m.off, .r_off = loc,
-                    .CIGAR = mstring_from(cigars[i], false), .q_name = r.name,
-                    .g_name = m.g_name, .qual = r.qual, .query = r.seq,
-                    .r_name = mstring_borrow("*", 1), .ed = limit,
-                    .mapq = 255, .valid = (limit >= 0), .flag = 0};
-//            results[i].loc = loc;
-//            results[i].off = m.off;
-//            results[i].CIGAR = mstring_from(cigar, false);
-//            results[i].q_name = r.name;
-//            results[i].g_name = m.g_name;
-//            results[i].qual = r.qual;
-//            results[i].query = r.seq;
-//            results[i].r_name = mstring_borrow("*", 1);
-//            results[i].ed = limit;
-//            results[i].mapq = 255;
-//            results[i].valid = (limit >= 0);
-//            results[i].flag = 0;
-//            free(cigar);
-//            results[i].CIGAR.own = true;
-
-//            if (meta_r == 0 || limit == -1) {
-//                results[i].valid = false;
-//                results[i].flag += 0x4;
-//                results[i].mapq = 0;
-//            } else {
-//                if (m.strand == 1) {
-//                    results[i].flag += 16;
-//                }
-//            }
-
-            if (meta_r == 0 || limit == -1) {
-                re.valid = false;
-                re.flag += 0x4;
-                re.mapq = 0;
-            } else {
-                if (m.strand == 1) {
-                    re.flag += 16;
+#pragma acc parallel loop
+            for (u64 chunk_i = 0; chunk_i < CHUNK_SIZE && chunk_i + i< len; ++chunk_i) {
+                read_t r = reads[i+chunk_i];
+                result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
+                        .CIGAR = mstring_from(cigars[chunk_i+i], false), .q_name = r.name,
+                        .g_name = m[chunk_i].g_name, .qual = r.qual, .query = r.seq,
+                        .r_name = mstring_borrow("*", 1), .ed = limit[chunk_i],
+                        .mapq = 255, .valid = (limit[chunk_i] >= 0), .flag = 0};
+    //            results[i].loc = loc;
+    //            results[i].off = m.off;
+    //            results[i].CIGAR = mstring_from(cigar, false);
+    //            results[i].q_name = r.name;
+    //            results[i].g_name = m.g_name;
+    //            results[i].qual = r.qual;
+    //            results[i].query = r.seq;
+    //            results[i].r_name = mstring_borrow("*", 1);
+    //            results[i].ed = limit;
+    //            results[i].mapq = 255;
+    //            results[i].valid = (limit >= 0);
+    //            results[i].flag = 0;
+    //            free(cigar);
+    //            results[i].CIGAR.own = true;
+    
+    //            if (meta_r == 0 || limit == -1) {
+    //                results[i].valid = false;
+    //                results[i].flag += 0x4;
+    //                results[i].mapq = 0;
+    //            } else {
+    //                if (m.strand == 1) {
+    //                    results[i].flag += 16;
+    //                }
+    //            }
+    
+                if (meta_r[chunk_i] == 0 || limit[chunk_i] == -1) {
+                    re.valid = false;
+                    re.flag += 0x4;
+                    re.mapq = 0;
+                } else {
+                    if (m[chunk_i].strand == 1) {
+                        re.flag += 16;
+                    }
                 }
+                results[chunk_i+i] = re;
+    
             }
-            results[i] = re;
 
-            histo_destroy(ot_iter_histo);
         }
 
         log.mvlog(&log, "Done processing current batch, "
