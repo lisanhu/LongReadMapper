@@ -14,7 +14,7 @@
 #include "edlib/edlib.h"
 #include "alnmain.h"
 
-#define CHUNK_SIZE 10000
+#define CHUNK_SIZE 50000
 
 const double ERROR_RATE = 0.05;
 
@@ -22,7 +22,7 @@ const double ERROR_RATE = 0.05;
 static void _rev_comp_in_place(char *seq, uint32_t len);
 
 void _rev_comp_in_place(char *seq, uint32_t len) {
-#pragma acc loop seq
+//#pragma acc loop seq
     for (uint32_t i = 0; i < len; ++i) {
         char c = seq[i];
         switch (c) {
@@ -143,12 +143,12 @@ typedef struct seq_meta {
     uint8_t strand;
 } seq_meta;
 
-#pragma acc routine seq
+//#pragma acc routine seq
 
 int
 seq_lookup(const mta_entry *table, int len, uint64_t loc, uint32_t qlen,
            seq_meta *result) {
-#pragma acc loop seq
+//#pragma acc loop seq
     for (int i = 0; i < len; ++i) {
         uint64_t sl = table[i].seq_len;
         uint64_t start = table[i].offset;
@@ -252,10 +252,10 @@ void init(context *ctx, int argc, const char **argv) {
     srand48(time(NULL));
 }
 
-#pragma acc routine seq
+//#pragma acc routine seq
 void remove_n(read_t *r) {
     const char *alpha = "ACGT";
-#pragma acc loop seq
+//#pragma acc loop seq
     for (u32 i = 0; i < r->len; ++i) {
         char ch = r->seq.s[i];
         if (ch == 'N' || ch == 'n') {
@@ -313,11 +313,12 @@ static inline int single_end(int argc, const char *argv[]) {
 //#pragma omp parallel for
         entry best[CHUNK_SIZE];
         for (u64 i = 0; i < len; i += CHUNK_SIZE) {
-#pragma acc parallel loop independent
-            for (u64 chunk_i = 0; chunk_i < CHUNK_SIZE && chunk_i+i < len; ++chunk_i) {
+            u64 max_limit = (i + CHUNK_SIZE > len) ? len - i : CHUNK_SIZE;
+//#pragma acc parallel loop
+            for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
     
                 read_t r = reads[i+chunk_i];
-                remove_n(&r);  /// todo: is this required?
+//                remove_n(&r);  /// todo: is this required?
                 results[i+chunk_i].valid = false;
     
     
@@ -326,12 +327,13 @@ static inline int single_end(int argc, const char *argv[]) {
                 const int gl = 1;   // todo: gap length should be further computed
     
                 double score = 0;
-    //#pragma acc loop seq
-                for (int iter = 0; iter < sl + gl; ++iter) {
+                entry cand[2];
+                int iter;
+//#pragma acc loop seq
+                for (iter = 0; iter < sl + gl; ++iter) {
     
-                    entry cand[2];
                     histo *in_iter_histo = histo_init(ctx.histo_cap);
-    //#pragma acc loop seq
+//#pragma acc loop seq
                     for (int j = iter; j < r.len - sl; j += sl + gl) {
                         u64 kk = 1, ll = ctx.fmi->length - 1, rr;
     
@@ -339,7 +341,7 @@ static inline int single_end(int argc, const char *argv[]) {
                                     ctx.lch);
     
                         if (rr > 0 && rr < ctx.uninformative_thres) {
-    //#pragma acc loop seq
+//#pragma acc loop seq
                             for (u64 k = kk; k <= ll; ++k) {
                                 u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
                                         j;
@@ -371,11 +373,15 @@ static inline int single_end(int argc, const char *argv[]) {
     
                     if (iter == sl + gl - 1) {
                         // last iteration
-                        u64 v = histo_find_2_max(ot_iter_histo, cand);
-                        best[chunk_i] = cand[0];
+//                        u64 v = histo_find_2_max(ot_iter_histo, cand);
+//                        best[chunk_i] = cand[0];
                     }
     
                     histo_destroy(in_iter_histo);
+                }
+                if (iter >= sl + gl - 1) {
+                  histo_find_2_max(ot_iter_histo, cand);
+                  best[chunk_i] = cand[0];
                 }
                 histo_destroy(ot_iter_histo);
             }
@@ -385,7 +391,7 @@ static inline int single_end(int argc, const char *argv[]) {
             int limit[CHUNK_SIZE];
             int meta_r[CHUNK_SIZE];
 #pragma acc parallel loop independent
-            for (u64 chunk_i = 0; chunk_i < CHUNK_SIZE && chunk_i + i< len; ++chunk_i) {
+            for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i+chunk_i];
                 loc[chunk_i] = best[chunk_i].key;
                 limit[chunk_i] = (int) (ERROR_RATE * r.len * 2);
@@ -402,8 +408,8 @@ static inline int single_end(int argc, const char *argv[]) {
             /// todo: The query field may be different from original read
             /// because we use replace N in the reads and the mstring will
             /// update the original read data
-#pragma acc parallel loop
-            for (u64 chunk_i = 0; chunk_i < CHUNK_SIZE && chunk_i + i< len; ++chunk_i) {
+//#pragma acc parallel loop
+            for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i+chunk_i];
                 result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
                         .CIGAR = mstring_from(cigars[chunk_i+i], false), .q_name = r.name,
