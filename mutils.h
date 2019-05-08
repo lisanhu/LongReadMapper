@@ -43,6 +43,7 @@ size_t file_length(const char *path);
 
 const char * load_file(const char *path, uint64_t *len);
 
+#pragma acc routine 
 char * cigar_align(const char *qry, int qlen, const char *target, int tlen, int *limit);
 
 #ifdef __cplusplus

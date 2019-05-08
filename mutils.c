@@ -11,6 +11,12 @@
 #include "edlib/edlib.h"
 #include "gact/gact.h"
 
+#pragma acc routine 
+size_t acc_strlen(char * s) {
+    size_t res = 0;
+    while (*(s++) != '\0') res++;
+    return res;
+}
 
 char * cstr_concat(const char *s1, const char *s2) {
     size_t l = strlen(s1) + strlen(s2);
@@ -22,7 +28,7 @@ char * cstr_concat(const char *s1, const char *s2) {
 
 #pragma acc routine
 mstring mstring_from(char *s, bool own) {
-    size_t l = strlen(s);
+    size_t l = acc_strlen(s);
     if (own) return mstring_own(s, l);
     else return mstring_borrow(s, l);
 }
