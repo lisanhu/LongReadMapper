@@ -14,9 +14,9 @@ extern "C" {
 #endif
 
 typedef struct _dna_fmi {
-	uint64_t length, o_len;
-	uint64_t *c, *o;
-	int o_ratio;
+	uint64_t length, o_len, csa_len;
+	uint64_t *c, *o, *csa;
+	int o_ratio, csa_ratio;
 	char *bwt;
 } dna_fmi;
 
@@ -28,6 +28,8 @@ typedef struct {
 extern sa_mem *sa_buf;
 
 uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc);
+uint64_t csa_access(dna_fmi *fmi, uint64_t loc);
+
 void sa_done_access();
 
 void fmi_build(const char *prefix, dna_fmi *idx, int o_ratio, long ram_use);

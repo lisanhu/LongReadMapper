@@ -337,8 +337,12 @@ static inline int single_end(int argc, const char *argv[]) {
                     if (rr > 0 && rr < ctx.uninformative_thres) {
 //#pragma acc loop seq
                         for (u64 k = kk; k <= ll; ++k) {
-                            u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
-                                    j;
+                            u64 l = csa_access(ctx.fmi, k);
+                            if (l == 0) {
+
+                                break;
+                            }
+                            l -= j;
                             histo_add(in_iter_histo, l);
                         }
                     }
@@ -373,7 +377,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
                 histo_destroy(in_iter_histo);
             }
-
+            histo_destroy(ot_iter_histo);
 
             u64 loc = best.key;
             int limit = (int) (ERROR_RATE * r.len * 2);
@@ -431,7 +435,7 @@ static inline int single_end(int argc, const char *argv[]) {
             }
             results[i] = re;
 
-            histo_destroy(ot_iter_histo);
+
         }
 
         log.mvlog(&log, "Done processing current batch, "
@@ -529,7 +533,8 @@ params read_params(const char *path) {
     params result;
     FILE *fp = fopen(path, "r");
     result.thres = 300;
-    result.batch_size = 1000000;
+//    result.batch_size = 1000000;
+    result.batch_size = 1000;
     result.seed_len = 20;
     if (fp) {
         fscanf(fp, "%lu %u %u", &result.batch_size, &result.seed_len,
