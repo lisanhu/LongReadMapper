@@ -314,7 +314,7 @@ static inline int single_end(int argc, const char *argv[]) {
         entry best[CHUNK_SIZE];
         for (u64 i = 0; i < len; i += CHUNK_SIZE) {
             u64 max_limit = (i + CHUNK_SIZE > len) ? len - i : CHUNK_SIZE;
-//#pragma acc parallel loop
+#pragma acc parallel loop
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
     
                 read_t r = reads[i+chunk_i];
@@ -329,11 +329,11 @@ static inline int single_end(int argc, const char *argv[]) {
                 double score = 0;
                 entry cand[2];
                 int iter;
-//#pragma acc loop seq
+#pragma acc loop seq
                 for (iter = 0; iter < sl + gl; ++iter) {
     
                     histo *in_iter_histo = histo_init(ctx.histo_cap);
-//#pragma acc loop seq
+#pragma acc loop seq
                     for (int j = iter; j < r.len - sl; j += sl + gl) {
                         u64 kk = 1, ll = ctx.fmi->length - 1, rr;
     
@@ -341,7 +341,7 @@ static inline int single_end(int argc, const char *argv[]) {
                                     ctx.lch);
     
                         if (rr > 0 && rr < ctx.uninformative_thres) {
-//#pragma acc loop seq
+#pragma acc loop seq
                             for (u64 k = kk; k <= ll; ++k) {
                                 u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
                                         j;
@@ -408,7 +408,7 @@ static inline int single_end(int argc, const char *argv[]) {
             /// todo: The query field may be different from original read
             /// because we use replace N in the reads and the mstring will
             /// update the original read data
-//#pragma acc parallel loop
+#pragma acc parallel loop
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i+chunk_i];
                 result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
