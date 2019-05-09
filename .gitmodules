@@ -1,3 +1,6 @@
 [submodule "mlog"]
 	path = mlog
 	url = https://github.com/lisanhu/mlog.git
+[submodule "gact"]
+	path = gact
+	url = ./gact
