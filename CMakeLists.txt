@@ -35,15 +35,31 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	set(CMAKE_C_FLAGS_RELEASE  "-O4 ${CMAKE_C_FLAGS_RELEASE}")
 	#    message("${CMAKE_CXX_FLAGS_DEBUG}")
 
-	set(ACCTYPE "multicore")
+	#set(ACCTYPE "multicore")
 
 	if (NOT ACCTYPE)
 		set(ACCTYPE "s")
 	endif ()
-
+	
+	# Adding ACC flags 
 	if (NOT ("${ACCTYPE}" STREQUAL "s" OR "${ACCTYPE}" STREQUAL "serial"))
+		if (OMPMULTICORE AND "${ACCTYPE}" STREQUAL "multicore")
+			message (WARNING "ACC Multicore and OMP multicore conflict. ACC Has priority")
+		endif ()
 		set(CMAKE_CXX_FLAGS "-ta=${ACCTYPE} -Minfo ${CMAKE_CXX_FLAGS}")
 		set(CMAKE_C_FLAGS "-ta=${ACCTYPE} -Minfo ${CMAKE_C_FLAGS}")
+	endif ()
+	# Adding OMP Flags	
+	if (OMPMULTICORE AND NOT "${ACCTYPE}" STREQUAL "multicore")
+		set(CMAKE_CXX_FLAGS "-mp ${CMAKE_CXX_FLAGS}")
+		set(CMAKE_C_FLAGS "-mp ${CMAKE_C_FLAGS}")
+	endif ()
+
+	# Selecting multicore flags
+	if ("${ACCTYPE}" STREQUAL "multicore")
+		set(CMAKE_CXX_FLAGS "-DMP_PARALLELISM=1 ${CMAKE_CXX_FLAGS}")
+	elseif (OMPMULTICORE)
+		set(CMAKE_CXX_FLAGS "-DMP_PARALLELISM=2 ${CMAKE_CXX_FLAGS}")
 	endif ()
 	
 elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
