@@ -17,8 +17,8 @@ static inline void _seq_to_upper_case(char *seq, size_t length);
 
 
 
-static mmstring ms_from_ks(kstring_t ks) {
-    mmstring ms = {.l = ks.l, .s = strndup(ks.s, ks.l)};
+static mstring ms_from_ks(kstring_t ks) {
+    mstring ms = {.l = ks.l, .s = strndup(ks.s, ks.l)};
     return ms;
 }
 
@@ -86,7 +86,7 @@ void create_meta(const char *prefix) {
     gzFile fp = gzopen(prefix, "r");
     kseq_t *seq = kseq_init(fp);
     while (kseq_read(seq) >= 0) {
-        mmstring seq_name = ms_from_ks(seq->name);
+        mstring seq_name = ms_from_ks(seq->name);
         /// mta file contents
         mstring_write(seq_name, mfp);  // seq_name
         fwrite(&offset, sizeof(uint64_t), 1, mfp); // offset
