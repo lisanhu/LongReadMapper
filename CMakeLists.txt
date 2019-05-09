@@ -30,9 +30,9 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	# using PGI
 	# todo: PGI bug work-around
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0")
-	set(CMAKE_CXX_FLAGS_RELEASE "-O4 ${CMAKE_CXX_FLAGS_RELEASE}")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O0 -g ")
+	set(CMAKE_C_FLAGS_RELEASE  "-O0 -g ")
 	set(CMAKE_C_FLAGS_DEBUG "-pg ${CMAKE_C_FLAGS_DEBUG}")
-	set(CMAKE_C_FLAGS_RELEASE  "-O4 ${CMAKE_C_FLAGS_RELEASE}")
 	#    message("${CMAKE_CXX_FLAGS_DEBUG}")
 
 	#set(ACCTYPE "multicore")
