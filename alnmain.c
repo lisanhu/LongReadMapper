@@ -27,7 +27,7 @@
 #include "edlib/edlib.h"
 #include "alnmain.h"
 
-#define CHUNK_SIZE 50000
+#define CHUNK_SIZE 50
 
 const double ERROR_RATE = 0.05;
 
@@ -322,7 +322,7 @@ static inline int single_end(int argc, const char *argv[]) {
 
 //        char **cigars = malloc(len * sizeof(char *));
         cigar *cig = malloc(len * sizeof(cigar));
-        uint8_t **store = malloc(len * sizeof(uint8_t));
+        uint8_t **store = malloc(len * sizeof(uint8_t *));
         uint8_t *store_mem = malloc(len * ctx.max_read_len * 2 * sizeof(uint8_t));
         for (int i = 0; i < len; ++i) {
             store[i] = store_mem + i * ctx.max_read_len * 2;
