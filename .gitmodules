@@ -3,4 +3,4 @@
 	url = https://github.com/lisanhu/mlog.git
 [submodule "gact"]
 	path = gact
-	url = ./gact
+	url = https://github.com/lisanhu/GACT.git
