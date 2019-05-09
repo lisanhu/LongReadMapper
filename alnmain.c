@@ -320,25 +320,36 @@ static inline int single_end(int argc, const char *argv[]) {
 
         log.mvlog(&log, "Begin processing queries");
 
-        char **cigars = malloc(len * sizeof(char *));
+//        char **cigars = malloc(len * sizeof(char *));
+        cigar *cig = malloc(len * sizeof(cigar));
+        uint8_t **store = malloc(len * sizeof(uint8_t));
+        uint8_t *store_mem = malloc(len * ctx.max_read_len * 2 * sizeof(uint8_t));
+        for (int i = 0; i < len; ++i) {
+            store[i] = store_mem + i * ctx.max_read_len * 2;
+        }
+
+        for (int i = 0; i < len; ++i) {
+            cig[i].cigar = store[i];
+            cig[i].n_cigar_op = 0;
+        }
 
 //#pragma acc parallel loop
 //#pragma omp parallel for
         entry best[CHUNK_SIZE];
-#if MP_PARALLELISM == OMP_PARALLEL
-       int num_gpus = omp_get_num_devices();
-#pragma omp parallel
-        {
-            #pragma omp taskloop num_tasks(num_gpus)
-#endif
+//#if MP_PARALLELISM == OMP_PARALLEL
+//       int num_gpus = omp_get_num_devices();
+//#pragma omp parallel
+//        {
+//            #pragma omp taskloop num_tasks(num_gpus)
+//#endif
             for (u64 i = 0; i < len; i += CHUNK_SIZE) {
                 u64 max_limit = (i + CHUNK_SIZE > len) ? len - i : CHUNK_SIZE;
 
-#if MP_PARALLELISM == ACC_PARALLEL
-                #pragma acc parallel loop
-#elif MP_PARALLELISM == OMP_PARALLEL
-                #pragma omp taskloop 
-#endif     
+//#if MP_PARALLELISM == ACC_PARALLEL
+//                #pragma acc parallel loop
+//#elif MP_PARALLELISM == OMP_PARALLEL
+//                #pragma omp taskloop
+//#endif
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
         
                     read_t r = reads[i+chunk_i];
@@ -353,15 +364,15 @@ static inline int single_end(int argc, const char *argv[]) {
                     double score = 0;
                     entry cand[2];
                     int iter;
-#if MP_PARALLELISM == ACC_PARALLEL
-                    #pragma acc loop seq
-#endif 
+//#if MP_PARALLELISM == ACC_PARALLEL
+//                    #pragma acc loop seq
+//#endif
                     for (iter = 0; iter < sl + gl; ++iter) {
         
                         histo *in_iter_histo = histo_init(ctx.histo_cap);
-#if MP_PARALLELISM == ACC_PARALLEL
-                        #pragma acc loop seq
-#endif 
+//#if MP_PARALLELISM == ACC_PARALLEL
+//                        #pragma acc loop seq
+//#endif
                         for (int j = iter; j < r.len - sl; j += sl + gl) {
                             u64 kk = 1, ll = ctx.fmi->length - 1, rr;
         
@@ -369,9 +380,9 @@ static inline int single_end(int argc, const char *argv[]) {
                                         ctx.lch);
         
                             if (rr > 0 && rr < ctx.uninformative_thres) {
-#if MP_PARALLELISM == ACC_PARALLEL
-                                #pragma acc loop seq
-#endif 
+//#if MP_PARALLELISM == ACC_PARALLEL
+//                                #pragma acc loop seq
+//#endif
                                 for (u64 k = kk; k <= ll; ++k) {
                                     u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
                                             j;
@@ -422,6 +433,7 @@ static inline int single_end(int argc, const char *argv[]) {
                 int limit[CHUNK_SIZE];
                 int meta_r[CHUNK_SIZE];
 
+
                 #pragma acc parallel loop independent
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                     read_t r = reads[i+chunk_i];
@@ -433,24 +445,22 @@ static inline int single_end(int argc, const char *argv[]) {
                         _rev_comp_in_place(r.seq.s, r.len);
                     }
     
-                    cigars[chunk_i+i] = cigar_align(r.seq.s, r.len, ctx.content + m[chunk_i].loc,
-                                              r.len,
-                                              &limit[chunk_i]);
+                    cig[i + chunk_i] = cigar_align(r.seq.s, r.len, ctx.content + m[chunk_i].loc, r.len, &limit[chunk_i], store[chunk_i]);
                 }
 
                 // PART 3
                 /// todo: The query field may be different from original read
                 /// because we use replace N in the reads and the mstring will
                 /// update the original read data
-#if MP_PARALLELISM == ACC_PARALLEL
-                #pragma acc parallel loop independent
-#elif MP_PARALLELISM == OMP_PARALLEL
-                #pragma omp taskloop
-#endif 
+//#if MP_PARALLELISM == ACC_PARALLEL
+//                #pragma acc parallel loop independent
+//#elif MP_PARALLELISM == OMP_PARALLEL
+//                #pragma omp taskloop
+//#endif
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                     read_t r = reads[i+chunk_i];
                     result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
-                            .CIGAR = mstring_from(cigars[chunk_i+i], false), .q_name = r.name,
+                            .CIGAR = cig[i], .q_name = r.name,
                             .g_name = m[chunk_i].g_name, .qual = r.qual, .query = r.seq,
                             .r_name = mstring_borrow("*", 1), .ed = limit[chunk_i],
                             .mapq = 255, .valid = (limit[chunk_i] >= 0), .flag = 0};
@@ -493,9 +503,9 @@ static inline int single_end(int argc, const char *argv[]) {
                 }
     
             }
-#if MP_PARALLELISM == OMP_PARALLEL
-        }
-#endif
+//#if MP_PARALLELISM == OMP_PARALLEL
+//        }
+//#endif
 
         log.mvlog(&log, "Done processing current batch, "
                         "currently processed %ld queries", total);
@@ -509,13 +519,17 @@ static inline int single_end(int argc, const char *argv[]) {
                 valid += 1;
             }
 
+            char cigar_buf[results[i].query.l * 2];
+            parse_cigar(&results[i].CIGAR, results->query.l, cigar_buf);
+
             fprintf(out_stream,
                     "%.*s\t"        //query_name
                     "%d\t"          //flag
                     "%.*s\t"        //gene_name
                     "%ld\t"         //? results[i].off + 1
                     "%d\t"          //mapping quality
-                    "%.*s\t"        //CIGAR
+//                    "%.*s\t"        //CIGAR
+                    "%s\t"        //CIGAR
                     "%.*s\t"        //??
                     "%ld\t"         // ?
                     "%d\t"          //?
@@ -527,7 +541,8 @@ static inline int single_end(int argc, const char *argv[]) {
                     (int)results[i].g_name.l, results[i].g_name.s,
                     results[i].off + 1,
                     results[i].mapq,
-                    (int)results[i].CIGAR.l, results[i].CIGAR.s,
+//                    (int)results[i].CIGAR.l, results[i].CIGAR.s,
+                    cigar_buf,
                     (int)results[i].r_name.l, results[i].r_name.s,
 //                    results[i].r_off,
                     0L,
@@ -535,15 +550,19 @@ static inline int single_end(int argc, const char *argv[]) {
                     (int)results[i].query.l, results[i].query.s,
                     (int)results[i].qual.l, results[i].qual.s,
                     results[i].ed);
-            mstring_destroy(&results[i].CIGAR);
+//            mstring_destroy(&results[i].CIGAR);
+//            free(cigar_buf);
 //            read_destroy(&reads[i]);
         }
         fflush(out_stream);
 //		fclose(out_stream);
-        for (int i = 0; i < len; ++i) {
-            free(cigars[i]);
-        }
-        free(cigars);
+//        for (int i = 0; i < len; ++i) {
+//            free(cigars[i]);
+//        }
+//        free(cigars);
+        free(cig);
+        free(store);
+        free(store_mem);
 //        fprintf(stderr, "Kill the double free!\n");
         reads_destroy(reads, len);
         free(buf);

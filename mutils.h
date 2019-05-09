@@ -9,6 +9,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "gact/gact.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,7 +45,8 @@ size_t file_length(const char *path);
 const char * load_file(const char *path, uint64_t *len);
 
 #pragma acc routine 
-char * cigar_align(const char *qry, int qlen, const char *target, int tlen, int *limit);
+cigar cigar_align(const char *qry, int qlen, const char *target, int tlen,
+                  int *limit, uint8_t *cigar_result);
 
 #ifdef __cplusplus
 };

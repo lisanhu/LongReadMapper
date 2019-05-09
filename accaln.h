@@ -16,6 +16,7 @@
 #include "fmidx/fmidx.h"
 #include "lchash/lchash.h"
 #include "mlog/logger.h"
+#include "gact/gact.h"
 
 KSEQ_INIT(gzFile, gzread)
 
@@ -95,7 +96,8 @@ typedef struct result{
 	/// location in the file, offset in BAM format, offset of mate/pair read
 	uint64_t loc, off, r_off;
 	/// CIGAR string, query name, gene name, query quality, query, reference name of mate/pair read
-	mstring CIGAR, q_name, g_name, qual, query, r_name;
+	mstring q_name, g_name, qual, query, r_name;
+	cigar CIGAR;
 	int ed, mapq, flag;
     int valid;
 } result;

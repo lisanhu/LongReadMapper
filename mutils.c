@@ -92,32 +92,16 @@ const char * load_file(const char *path, uint64_t *len) {
 	return buf;
 }
 
-inline char *cigar_align(const char *qry, int qlen, const char *target, int tlen,
-                  int *limit) {
-//	EdlibAlignResult align = edlibAlign(qry, qlen,target, tlen,
-//			edlibNewAlignConfig(*limit, EDLIB_MODE_NW, EDLIB_TASK_PATH, NULL, 0));
-//	char *cigar = edlibAlignmentToCigar(align.alignment, align.alignmentLength,
-//	                                    EDLIB_CIGAR_STANDARD);
-//	*limit = align.editDistance;
-//	edlibFreeAlignResult(align);
-//	if (*limit == -1) {
-//	    free(cigar);
-//        return strdup("*");
-//    }
-//	return cigar;
+inline cigar cigar_align(const char *qry, int qlen, const char *target,
+                         int tlen,
+                         int *limit, uint8_t *cigar_result) { // NOLINT(readability-non-const-parameter)
 
     mmstring q = ms_borrow((char *) qry, qlen);
     mmstring d = ms_borrow((char *) target, tlen);
-    gact_align r = simple_gact(q, d);
-    *limit = r.tscore;
-    char *cigar = gact_cigar(&r, q.l);
-    if (*limit == -1) {
-        free(cigar);
-        return strdup("*");
-    }
-    return cigar;
-    *limit = -1;
-    return strdup("*");
+    cigar result = {.cigar = cigar_result, .n_cigar_op = 0};
+    simple_gact(q, d, &result);
+    *limit = result.score;
+    return result;
 }
 
 #pragma acc routine
