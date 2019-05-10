@@ -428,9 +428,13 @@ static inline int single_end(int argc, const char *argv[]) {
             mta_entry *mta = ctx.mta;
             int mta_len = ctx.mta_len;
             const char *content = ctx.content;
+            int max_read_len = ctx.max_read_len;
+
+            char *reads_mem = buf + (ctx.max_read_len + 1) * i;
 
 #pragma acc parallel loop independent copyin(mta[:mta_len]) \
             copyin(content[:ctx.con_len]) \
+            copyin(reads_mem[:max_limit * (ctx.max_read_len + 1)]) \
                 num_gangs(256) vector_length(256)
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i + chunk_i];
@@ -443,7 +447,7 @@ static inline int single_end(int argc, const char *argv[]) {
                     _rev_comp_in_place(r.seq.s, r.len);
                 }
 
-                cig[i + chunk_i] = cigar_align(r.seq.s, r.len,
+                cig[i + chunk_i] = cigar_align(reads_mem + (i + chunk_i) * max_read_len, r.len,
                                                content + m[chunk_i].loc,
                                                r.len, &limit[chunk_i],
                                                store[chunk_i]);
