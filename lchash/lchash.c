@@ -86,7 +86,6 @@ void lc_destroy(lc_hash hash) {
 //	hash = h;
 }
 
-#pragma acc routine seq
 inline uint64_t
 lc_aln(const char *qry, int qlen, uint64_t *k, uint64_t *l, const dna_fmi *fmi,
        const lc_hash *hash) {

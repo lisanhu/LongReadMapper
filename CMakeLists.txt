@@ -83,8 +83,8 @@ add_executable(accidx asindex.c mutils.c mutils.h fmidx/fmidx.c
 target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort gact)
 
 
-add_executable(accaln accaln.c alnmain.c histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c)
-target_link_libraries(accaln mlog edlib sa_use divsufsort64 divsufsort gact)
+add_executable(accaln accaln.c alnmain.c histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c mlog/logger.c gact/gact.c gact/mstring/mstring.c)
+target_link_libraries(accaln sa_use divsufsort64 divsufsort)
 
 if (ZLIB_FOUND)
 	include_directories(${ZLIB_INCLUDE_DIRS})
