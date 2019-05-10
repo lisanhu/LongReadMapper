@@ -340,16 +340,16 @@ static inline int single_end(int argc, const char *argv[]) {
                 #pragma omp taskloop
 #endif
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
-        
+
                     read_t r = reads[i+chunk_i];
     //                remove_n(&r);  /// todo: is this required?
                     results[i+chunk_i].valid = false;
-        
-        
+
+
                     histo *ot_iter_histo = histo_init(ctx.histo_cap);
                     const int sl = ctx.seed_len; // todo: seed length should be further computed
                     const int gl = 1;   // todo: gap length should be further computed
-        
+
                     double score = 0;
                     entry cand[2];
                     int iter;
@@ -357,17 +357,17 @@ static inline int single_end(int argc, const char *argv[]) {
                     #pragma acc loop seq
 #endif
                     for (iter = 0; iter < sl + gl; ++iter) {
-        
+
                         histo *in_iter_histo = histo_init(ctx.histo_cap);
 #if MP_PARALLELISM == ACC_PARALLEL
                         #pragma acc loop seq
 #endif
                         for (int j = iter; j < r.len - sl; j += sl + gl) {
                             u64 kk = 1, ll = ctx.fmi->length - 1, rr;
-        
+
                             rr = lc_aln(r.seq.s + j, ctx.seed_len, &kk, &ll, ctx.fmi,
                                         ctx.lch);
-        
+
                             if (rr > 0 && rr < ctx.uninformative_thres) {
 #if MP_PARALLELISM == ACC_PARALLEL
                                 #pragma acc loop seq
@@ -379,13 +379,13 @@ static inline int single_end(int argc, const char *argv[]) {
                                 }
                             }
                         }
-        
+
                         int num_seeds = r.len / (sl + gl);
-        
+
                         if (num_seeds > 0) {
                             u64 v = histo_find_2_max(in_iter_histo, cand);
                             score = (double) v / num_seeds;
-        
+
         //					double score = (double) v / num_seeds;
                             if (score >
                                 0.6) { // todo: think of reasoning behind this threshold
@@ -400,13 +400,13 @@ static inline int single_end(int argc, const char *argv[]) {
                                 }
                             }
                         }
-        
+
                         if (iter == sl + gl - 1) {
                             // last iteration
     //                        u64 v = histo_find_2_max(ot_iter_histo, cand);
     //                        best[chunk_i] = cand[0];
                         }
-        
+
                         histo_destroy(in_iter_histo);
                     }
                     if (iter >= sl + gl - 1) {
@@ -422,18 +422,20 @@ static inline int single_end(int argc, const char *argv[]) {
                 int limit[CHUNK_SIZE];
                 int meta_r[CHUNK_SIZE];
 
+                mta_entry *mta = ctx.mta;
+                int mta_len = ctx.mta_len;
 
-                #pragma acc parallel loop independent num_gangs(256) vector_length(256) 
+                #pragma acc parallel loop independent num_gangs(256) vector_length(256)
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                     read_t r = reads[i+chunk_i];
                     loc[chunk_i] = best[chunk_i].key;
                     limit[chunk_i] = (int) (ERROR_RATE * r.len * 2);
     //                int limit = -1;
-                    meta_r[chunk_i] = seq_lookup(ctx.mta, ctx.mta_len, loc[chunk_i], r.len, &m[chunk_i]);
+                    meta_r[chunk_i] = seq_lookup(mta, mta_len, loc[chunk_i], r.len, &m[chunk_i]);
                     if (m[chunk_i].strand == 1) {
                         _rev_comp_in_place(r.seq.s, r.len);
                     }
-    
+
                     cig[i + chunk_i] = cigar_align(r.seq.s, r.len, ctx.content + m[chunk_i].loc, r.len, &limit[chunk_i], store[chunk_i]);
                 }
 
@@ -467,7 +469,7 @@ static inline int single_end(int argc, const char *argv[]) {
         //            results[i].flag = 0;
         //            free(cigar);
         //            results[i].CIGAR.own = true;
-        
+
         //            if (meta_r == 0 || limit == -1) {
         //                results[i].valid = false;
         //                results[i].flag += 0x4;
@@ -477,7 +479,7 @@ static inline int single_end(int argc, const char *argv[]) {
         //                    results[i].flag += 16;
         //                }
         //            }
-        
+
                     if (meta_r[chunk_i] == 0 || limit[chunk_i] == -1) {
                         re.valid = false;
                         re.flag += 0x4;
@@ -488,9 +490,9 @@ static inline int single_end(int argc, const char *argv[]) {
                         }
                     }
                     results[chunk_i+i] = re;
-        
+
                 }
-    
+
             }
 #if MP_PARALLELISM == OMP_PARALLEL
         }
