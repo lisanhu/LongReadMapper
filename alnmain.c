@@ -451,7 +451,8 @@ static inline int single_end(int argc, const char *argv[]) {
                 cig[i + chunk_i] = cigar_align(reads_mem + (i + chunk_i) * (max_read_len + 1), r.len,
                                                content + m[chunk_i].loc,
                                                r.len, &limit[chunk_i],
-                                               store[chunk_i]);
+//                                               store[chunk_i]);
+                                               store_mem + chunk_i * ctx.max_read_len * 2);
             }
 
             // PART 3
