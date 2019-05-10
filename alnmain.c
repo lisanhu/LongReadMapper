@@ -336,20 +336,20 @@ static inline int single_end(int argc, const char *argv[]) {
 //#pragma acc parallel loop
 //#pragma omp parallel for
         entry best[CHUNK_SIZE];
-//#if MP_PARALLELISM == OMP_PARALLEL
-//       int num_gpus = omp_get_num_devices();
-//#pragma omp parallel
-//        {
-//            #pragma omp taskloop num_tasks(num_gpus)
-//#endif
+#if MP_PARALLELISM == OMP_PARALLEL
+       int num_gpus = omp_get_num_devices();
+#pragma omp parallel
+        {
+            #pragma omp taskloop num_tasks(num_gpus)
+#endif
             for (u64 i = 0; i < len; i += CHUNK_SIZE) {
                 u64 max_limit = (i + CHUNK_SIZE > len) ? len - i : CHUNK_SIZE;
 
-//#if MP_PARALLELISM == ACC_PARALLEL
-//                #pragma acc parallel loop
-//#elif MP_PARALLELISM == OMP_PARALLEL
-//                #pragma omp taskloop
-//#endif
+#if MP_PARALLELISM == ACC_PARALLEL
+                #pragma acc parallel loop
+#elif MP_PARALLELISM == OMP_PARALLEL
+                #pragma omp taskloop
+#endif
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
         
                     read_t r = reads[i+chunk_i];
@@ -364,15 +364,15 @@ static inline int single_end(int argc, const char *argv[]) {
                     double score = 0;
                     entry cand[2];
                     int iter;
-//#if MP_PARALLELISM == ACC_PARALLEL
-//                    #pragma acc loop seq
-//#endif
+#if MP_PARALLELISM == ACC_PARALLEL
+                    #pragma acc loop seq
+#endif
                     for (iter = 0; iter < sl + gl; ++iter) {
         
                         histo *in_iter_histo = histo_init(ctx.histo_cap);
-//#if MP_PARALLELISM == ACC_PARALLEL
-//                        #pragma acc loop seq
-//#endif
+#if MP_PARALLELISM == ACC_PARALLEL
+                        #pragma acc loop seq
+#endif
                         for (int j = iter; j < r.len - sl; j += sl + gl) {
                             u64 kk = 1, ll = ctx.fmi->length - 1, rr;
         
@@ -380,9 +380,9 @@ static inline int single_end(int argc, const char *argv[]) {
                                         ctx.lch);
         
                             if (rr > 0 && rr < ctx.uninformative_thres) {
-//#if MP_PARALLELISM == ACC_PARALLEL
-//                                #pragma acc loop seq
-//#endif
+#if MP_PARALLELISM == ACC_PARALLEL
+                                #pragma acc loop seq
+#endif
                                 for (u64 k = kk; k <= ll; ++k) {
                                     u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz, k) -
                                             j;
@@ -452,11 +452,11 @@ static inline int single_end(int argc, const char *argv[]) {
                 /// todo: The query field may be different from original read
                 /// because we use replace N in the reads and the mstring will
                 /// update the original read data
-//#if MP_PARALLELISM == ACC_PARALLEL
-//                #pragma acc parallel loop independent
-//#elif MP_PARALLELISM == OMP_PARALLEL
-//                #pragma omp taskloop
-//#endif
+#if MP_PARALLELISM == ACC_PARALLEL
+                #pragma acc parallel loop independent
+#elif MP_PARALLELISM == OMP_PARALLEL
+                #pragma omp taskloop
+#endif
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                     read_t r = reads[i+chunk_i];
                     result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
@@ -503,9 +503,9 @@ static inline int single_end(int argc, const char *argv[]) {
                 }
     
             }
-//#if MP_PARALLELISM == OMP_PARALLEL
-//        }
-//#endif
+#if MP_PARALLELISM == OMP_PARALLEL
+        }
+#endif
 
         log.mvlog(&log, "Done processing current batch, "
                         "currently processed %ld queries", total);
@@ -519,7 +519,10 @@ static inline int single_end(int argc, const char *argv[]) {
                 valid += 1;
             }
 
-            char cigar_buf[results[i].query.l * 2];
+            if (results[i].query.l * 2 <= 0) {
+                log.melog(&log, "Invalide read: %lu", results[i].query.l);
+            }
+            char *cigar_buf = malloc(results[i].query.l * 2);
             parse_cigar(&results[i].CIGAR, results->query.l, cigar_buf);
 
             fprintf(out_stream,

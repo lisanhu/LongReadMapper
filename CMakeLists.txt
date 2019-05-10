@@ -64,8 +64,8 @@ elseif ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
 	
 elseif("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
 	# using Clang
-	set(CMAKE_CXX_FLAGS "-fopenmp=libomp -g ${CMAKE_CXX_FLAGS}")
-	set(CMAKE_C_FLAGS "-fopenmp=libomp -g ${CMAKE_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "-DMP_PARALLELISM=1 -fopenmp=libomp -g ${CMAKE_CXX_FLAGS}")
+	set(CMAKE_C_FLAGS "-DMP_PARALLELISM=1 -fopenmp=libomp -g ${CMAKE_C_FLAGS}")
 
 	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 #		set(CMAKE_CXX_FLAGS "-pg -fsanitize=address ${CMAKE_CXX_FLAGS}")
