@@ -15,7 +15,6 @@
 
 sa_mem *sa_buf = NULL;
 
-#pragma acc routine seq
 inline uint64_t sa_access(const char *prefix, uint64_t cache_sz, uint64_t loc) {
     if (sa_buf != NULL) {
         if (loc > sa_buf->len) {
