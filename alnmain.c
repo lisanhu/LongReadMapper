@@ -545,7 +545,7 @@ static inline int single_end(int argc, const char *argv[]) {
                     (int)results[i].qual.l, results[i].qual.s,
                     results[i].ed);
 //            mstring_destroy(&results[i].CIGAR);
-//            free(cigar_buf);
+	        free(cigar_buf);
 //            read_destroy(&reads[i]);
         }
         fflush(out_stream);
