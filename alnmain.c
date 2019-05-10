@@ -6,17 +6,6 @@
 #include <time.h>
 #include <stdio.h>
 
-#define ACC_PARALLEL 1
-#define OMP_PARALLEL 2
-
-#ifndef MP_PARALLELISM
-#define MP_PARALLELISM OMP_PARALLEL
-#endif
-
-
-#if MP_PARALLELISM == OMP_PARALLEL
-#include <omp.h>
-#endif
 
 
 #include "accaln.h"

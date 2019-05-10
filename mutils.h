@@ -5,6 +5,17 @@
 #ifndef ACCSEQV8_MUTILS_H
 #define ACCSEQV8_MUTILS_H
 
+#define ACC_PARALLEL 1
+#define OMP_PARALLEL 2
+
+#ifndef MP_PARALLELISM
+#define MP_PARALLELISM OMP_PARALLEL
+#endif
+
+
+#if MP_PARALLELISM == OMP_PARALLEL
+#include <omp.h>
+#endif
 #include <stdint.h>
 #include <time.h>
 #include <stdio.h>
