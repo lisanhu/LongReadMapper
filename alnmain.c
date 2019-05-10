@@ -423,7 +423,7 @@ static inline int single_end(int argc, const char *argv[]) {
                 int meta_r[CHUNK_SIZE];
 
 
-                #pragma acc parallel loop independent
+                #pragma acc parallel loop independent num_gangs(256) vector_length(256) 
                 for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                     read_t r = reads[i+chunk_i];
                     loc[chunk_i] = best[chunk_i].key;
