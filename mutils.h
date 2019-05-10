@@ -25,11 +25,9 @@ typedef struct mstring {
 } mstring;
 
 char * cstr_concat(const char *s1, const char *s2);
-#pragma acc routine
 mstring mstring_from(char *s, bool own);
 #pragma acc routine
 mstring mstring_borrow(char *s, size_t l);
-#pragma acc routine
 mstring mstring_own(const char *s, size_t l);
 mstring mstring_clone(mstring ms);
 void mstring_destroy(mstring *ms);

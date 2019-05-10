@@ -31,7 +31,7 @@
 
 const double ERROR_RATE = 0.05;
 
-
+#pragma acc routine seq
 static void _rev_comp_in_place(char *seq, uint32_t len);
 
 void _rev_comp_in_place(char *seq, uint32_t len) {
@@ -156,7 +156,7 @@ typedef struct seq_meta {
     uint8_t strand;
 } seq_meta;
 
-//#pragma acc routine seq
+#pragma acc routine seq
 
 int
 seq_lookup(const mta_entry *table, int len, uint64_t loc, uint32_t qlen,

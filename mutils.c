@@ -26,7 +26,6 @@ char * cstr_concat(const char *s1, const char *s2) {
     return s;
 }
 
-#pragma acc routine
 mstring mstring_from(char *s, bool own) {
     size_t l = acc_strlen(s);
     if (own) return mstring_own(s, l);
@@ -98,7 +97,9 @@ inline cigar cigar_align(const char *qry, int qlen, const char *target,
 
     mmstring q = ms_borrow((char *) qry, qlen);
     mmstring d = ms_borrow((char *) target, tlen);
-    cigar result = {.cigar = cigar_result, .n_cigar_op = 0};
+    cigar result ;//= {.cigar = cigar_result, .n_cigar_op = 0};
+    result.cigar = cigar_result; 
+    result.n_cigar_op = 0;
     simple_gact(q, d, &result);
     *limit = result.score;
     return result;
@@ -109,11 +110,13 @@ mstring mstring_borrow(char *s, size_t l) { // NOLINT(readability-non-const-para
     /// todo: report this problem to CLion or Clang
     /// why is this s could be const? ms contains the reference to s and
     /// can be used to modify s in the future
-    mstring ms = {.s = s, .l = l, .own = false};
+    mstring ms ;//= {.s = s, .l = l, .own = false};
+    ms.s = s; 
+    ms.l = l;
+    ms.own = false;
     return ms;
 }
 
-#pragma acc routine
 mstring mstring_own(const char *s, size_t l) {
     mstring ms = {.s = strdup(s), .l = l, .own = true};
     return ms;
