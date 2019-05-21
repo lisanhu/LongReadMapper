@@ -435,6 +435,7 @@ static inline int single_end(int argc, const char *argv[]) {
 #pragma acc parallel loop independent copyin(mta[:mta_len]) \
             copyin(content[:ctx.con_len]) \
             copy(reads_mem[:max_limit * (ctx.max_read_len + 1)]) \
+            copy(limit[:], loc[:], meta_r[:], m[:], cig[i:max_limit]) \
                 num_gangs(256) vector_length(256)
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i + chunk_i];
@@ -442,7 +443,7 @@ static inline int single_end(int argc, const char *argv[]) {
                 limit[chunk_i] = (int) (ERROR_RATE * r.len * 2);
                 //                int limit = -1;
                 meta_r[chunk_i] = seq_lookup(mta, mta_len, loc[chunk_i], r.len,
-                                             &m[chunk_i]);
+                                             m + chunk_i);
                 if (m[chunk_i].strand == 1) {
                     _rev_comp_in_place(reads_mem + (i + chunk_i) * (max_read_len + 1)
                             , r.len);
