@@ -15,7 +15,7 @@
 #include "edlib/edlib.h"
 #include "alnmain.h"
 
-#define CHUNK_SIZE 50
+#define CHUNK_SIZE 5000
 
 const double ERROR_RATE = 0.05;
 
@@ -437,6 +437,7 @@ static inline int single_end(int argc, const char *argv[]) {
             copy(reads_mem[:max_limit * (ctx.max_read_len + 1)]) \
             copy(limit[:], loc[:], meta_r[:], m[:], cig[i:max_limit]) \
                 num_gangs(256) vector_length(256)
+		//copy(limit[:], loc[:], meta_r[:], m[:]) 
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i + chunk_i];
                 loc[chunk_i] = best[chunk_i].key;
