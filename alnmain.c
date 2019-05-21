@@ -15,7 +15,8 @@
 #include "edlib/edlib.h"
 #include "alnmain.h"
 
-#define CHUNK_SIZE 5000
+//#define CHUNK_SIZE 5000
+#define CHUNK_SIZE 500
 
 const double ERROR_RATE = 0.05;
 
@@ -326,20 +327,9 @@ static inline int single_end(int argc, const char *argv[]) {
 //#pragma acc parallel loop
 //#pragma omp parallel for
         entry best[CHUNK_SIZE];
-#if MP_PARALLELISM == OMP_PARALLEL
-        int num_gpus = omp_get_num_devices();
-#pragma omp parallel
-         {
-#pragma omp taskloop num_tasks(num_gpus)
-#endif
         for (u64 i = 0; i < len; i += CHUNK_SIZE) {
             u64 max_limit = (i + CHUNK_SIZE > len) ? len - i : CHUNK_SIZE;
 
-#if MP_PARALLELISM == ACC_PARALLEL
-#pragma acc parallel loop
-#elif MP_PARALLELISM == OMP_PARALLEL
-#pragma omp taskloop
-#endif
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
 
                 read_t r = reads[i + chunk_i];
@@ -354,15 +344,12 @@ static inline int single_end(int argc, const char *argv[]) {
                 double score = 0;
                 entry cand[2];
                 int iter;
-#if MP_PARALLELISM == ACC_PARALLEL
-#pragma acc loop seq
-#endif
+
+
                 for (iter = 0; iter < sl + gl; ++iter) {
 
                     histo *in_iter_histo = histo_init(ctx.histo_cap);
-#if MP_PARALLELISM == ACC_PARALLEL
-#pragma acc loop seq
-#endif
+
                     for (int j = iter; j < r.len - sl; j += sl + gl) {
                         u64 kk = 1, ll = ctx.fmi->length - 1, rr;
 
@@ -371,9 +358,7 @@ static inline int single_end(int argc, const char *argv[]) {
                                     ctx.lch);
 
                         if (rr > 0 && rr < ctx.uninformative_thres) {
-#if MP_PARALLELISM == ACC_PARALLEL
-#pragma acc loop seq
-#endif
+
                             for (u64 k = kk; k <= ll; ++k) {
                                 u64 l = sa_access(ctx.prefix, ctx.sa_cache_sz,
                                                   k) -
@@ -437,35 +422,36 @@ static inline int single_end(int argc, const char *argv[]) {
             copy(reads_mem[:max_limit * (ctx.max_read_len + 1)]) \
             copy(limit[:], loc[:], meta_r[:], m[:], cig[i:max_limit]) \
                 num_gangs(256) vector_length(256)
-		//copy(limit[:], loc[:], meta_r[:], m[:]) 
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i + chunk_i];
                 loc[chunk_i] = best[chunk_i].key;
                 limit[chunk_i] = (int) (ERROR_RATE * r.len * 2);
                 //                int limit = -1;
-                meta_r[chunk_i] = seq_lookup(mta, mta_len, loc[chunk_i], r.len,
+                meta_r[chunk_i] = seq_lookup(mta, mta_len, loc[chunk_i],
+                                             r.len,
                                              m + chunk_i);
                 if (m[chunk_i].strand == 1) {
-                    _rev_comp_in_place(reads_mem + (i + chunk_i) * (max_read_len + 1)
-                            , r.len);
+//                        _rev_comp_in_place(
+//                                reads_mem + (i + chunk_i) * (max_read_len + 1),
+//                                r.len);
+                    _rev_comp_in_place(r.seq.s, r.len);
                 }
 
-                cig[i + chunk_i] = cigar_align(reads_mem + (i + chunk_i) * (max_read_len + 1), r.len,
-                                               content + m[chunk_i].loc,
-                                               r.len, &limit[chunk_i],
-//                                               store[chunk_i]);
-                                               store_mem + chunk_i * ctx.max_read_len * 2);
+                cig[i + chunk_i] = cigar_align(
+//                            reads_mem + (i + chunk_i) * (max_read_len + 1),
+                        r.seq.s,
+                        r.len,
+                        content + m[chunk_i].loc,
+                        r.len, &limit[chunk_i],
+                        store[chunk_i + i]);
+//                        store_mem + chunk_i * ctx.max_read_len * 2);
             }
 
             // PART 3
             /// todo: The query field may be different from original read
             /// because we use replace N in the reads and the mstring will
             /// update the original read data
-#if MP_PARALLELISM == ACC_PARALLEL
-#pragma acc parallel loop independent
-#elif MP_PARALLELISM == OMP_PARALLEL
-#pragma omp taskloop
-#endif
+
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i + chunk_i];
                 result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
@@ -473,30 +459,6 @@ static inline int single_end(int argc, const char *argv[]) {
                         .g_name = m[chunk_i].g_name, .qual = r.qual, .query = r.seq,
                         .r_name = mstring_borrow("*", 1), .ed = limit[chunk_i],
                         .mapq = 255, .valid = (limit[chunk_i] >= 0), .flag = 0};
-                //            results[i].loc = loc;
-                //            results[i].off = m.off;
-                //            results[i].CIGAR = mstring_from(cigar, false);
-                //            results[i].q_name = r.name;
-                //            results[i].g_name = m.g_name;
-                //            results[i].qual = r.qual;
-                //            results[i].query = r.seq;
-                //            results[i].r_name = mstring_borrow("*", 1);
-                //            results[i].ed = limit;
-                //            results[i].mapq = 255;
-                //            results[i].valid = (limit >= 0);
-                //            results[i].flag = 0;
-                //            free(cigar);
-                //            results[i].CIGAR.own = true;
-
-                //            if (meta_r == 0 || limit == -1) {
-                //                results[i].valid = false;
-                //                results[i].flag += 0x4;
-                //                results[i].mapq = 0;
-                //            } else {
-                //                if (m.strand == 1) {
-                //                    results[i].flag += 16;
-                //                }
-                //            }
 
                 if (meta_r[chunk_i] == 0 || limit[chunk_i] == -1) {
                     re.valid = false;
@@ -512,9 +474,6 @@ static inline int single_end(int argc, const char *argv[]) {
             }
 
         }
-#if MP_PARALLELISM == OMP_PARALLEL
-        }
-#endif
 
         log.mvlog(&log, "Done processing current batch, "
                         "currently processed %ld queries", total);
@@ -531,7 +490,8 @@ static inline int single_end(int argc, const char *argv[]) {
             if (results[i].query.l * 2 <= 0) {
                 log.melog(&log, "Invalide read: %lu", results[i].query.l);
             }
-            char *cigar_buf = malloc(results[i].query.l * 2);
+//            char *cigar_buf = malloc(results[i].query.l * 2);
+            char cigar_buf[results[i].query.l * 2];
             parse_cigar(&results[i].CIGAR, results->query.l, cigar_buf);
 
             fprintf(out_stream,
@@ -553,29 +513,18 @@ static inline int single_end(int argc, const char *argv[]) {
                     (int) results[i].g_name.l, results[i].g_name.s,
                     results[i].off + 1,
                     results[i].mapq,
-//                    (int)results[i].CIGAR.l, results[i].CIGAR.s,
                     cigar_buf,
                     (int) results[i].r_name.l, results[i].r_name.s,
-//                    results[i].r_off,
                     0L,
                     0,
                     (int) results[i].query.l, results[i].query.s,
                     (int) results[i].qual.l, results[i].qual.s,
                     results[i].ed);
-//            mstring_destroy(&results[i].CIGAR);
-            free(cigar_buf);
-//            read_destroy(&reads[i]);
         }
         fflush(out_stream);
-//		fclose(out_stream);
-//        for (int i = 0; i < len; ++i) {
-//            free(cigars[i]);
-//        }
-//        free(cigars);
         free(cig);
         free(store);
         free(store_mem);
-//        fprintf(stderr, "Kill the double free!\n");
         reads_destroy(reads, len);
         free(buf);
         clock_gettime(CLOCK_MONOTONIC, &timer);

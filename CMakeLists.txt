@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 find_package(ZLIB REQUIRED)
 
 add_subdirectory(psascan)
-add_subdirectory(edlib)
+#add_subdirectory(edlib)
 add_subdirectory(mlog)
 add_subdirectory(gact)
 
@@ -80,11 +80,16 @@ endif()
 
 add_executable(accidx asindex.c mutils.c mutils.h fmidx/fmidx.c
 		fmidx/fmidx.h lchash/lchash.c lchash/lchash.h)
-target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort gact -mp)
+target_link_libraries(accidx sa_use divsufsort64 divsufsort gact)
 
 
 add_executable(accaln accaln.c alnmain.c histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c mlog/logger.c gact/gact.c gact/mstring/mstring.c)
-target_link_libraries(accaln sa_use divsufsort64 divsufsort -mp)
+target_link_libraries(accaln sa_use divsufsort64 divsufsort)
+
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "PGI")
+	target_link_libraries(accidx -mp)
+	target_link_libraries(accaln -mp)
+endif()
 
 if (ZLIB_FOUND)
 	include_directories(${ZLIB_INCLUDE_DIRS})
