@@ -445,6 +445,9 @@ static inline int single_end(int argc, const char *argv[]) {
                         r.len, &limit[chunk_i],
                         store[chunk_i + i]);
 //                        store_mem + chunk_i * ctx.max_read_len * 2);
+//                char cigar_buf[r.len * 2];
+//                parse_cigar(&cig[i + chunk_i], r.len, cigar_buf);
+//                printf("(i, chunk_i)=(%lu, %lu): %s\n", i, chunk_i, cigar_buf);
             }
 
             // PART 3
@@ -455,7 +458,7 @@ static inline int single_end(int argc, const char *argv[]) {
             for (u64 chunk_i = 0; chunk_i < max_limit; ++chunk_i) {
                 read_t r = reads[i + chunk_i];
                 result re = {.loc = loc[chunk_i], .off = m[chunk_i].off, .r_off = loc[chunk_i],
-                        .CIGAR = cig[i], .q_name = r.name,
+                        .CIGAR = cig[i + chunk_i], .q_name = r.name,
                         .g_name = m[chunk_i].g_name, .qual = r.qual, .query = r.seq,
                         .r_name = mstring_borrow("*", 1), .ed = limit[chunk_i],
                         .mapq = 255, .valid = (limit[chunk_i] >= 0), .flag = 0};

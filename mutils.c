@@ -92,8 +92,7 @@ const char * load_file(const char *path, uint64_t *len) {
 }
 
 inline cigar cigar_align(const char *qry, int qlen, const char *target,
-                         int tlen,
-                         int *limit, uint8_t *cigar_result) { // NOLINT(readability-non-const-parameter)
+                         int tlen, int *limit, uint8_t *cigar_result) { // NOLINT(readability-non-const-parameter)
 
     mmstring q = ms_borrow((char *) qry, qlen);
     mmstring d = ms_borrow((char *) target, tlen);
