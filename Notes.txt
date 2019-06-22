@@ -6,7 +6,7 @@ CMakeLists.txt
 *.mta
 	meta info for the db
 	each record is represented as (seq_name, offset, seq_length)
-	seq_name is serialized as mstring data structure with length first, then
+	seq_name is serialized as mmstring data structure with length first, then
 	contents
 
 *.cat
