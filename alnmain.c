@@ -575,7 +575,8 @@ params read_params(const char *path) {
     params result;
     FILE *fp = fopen(path, "r");
     result.thres = 300;
-    result.batch_size = 1000000;
+//    result.batch_size = 1000000;
+    result.batch_size = 1000;
     result.seed_len = 20;
     if (fp) {
         fscanf(fp, "%lu %u %u", &result.batch_size, &result.seed_len,

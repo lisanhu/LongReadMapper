@@ -150,6 +150,19 @@ static void _build_o_dna_table(const char *bwt, uint64_t length, int ratio, uint
 }
 
 
+static inline void _build_csa(const char *prefix, dna_fmi *idx) {
+    size_t l = file_length(prefix);
+    idx->csa_len = l / idx->csa_ratio + 1;
+    idx->csa = malloc(sizeof(uint64_t) * idx->csa_len);
+
+    for (uint64_t i = 0; i < idx->csa_len; ++i) {
+        uint64_t si = sa_access(prefix, l, i * idx->csa_ratio);
+//        uint64_t si = sa_access(prefix, l, i * idx->csa_ratio);
+        idx->csa[i] = si;
+    }
+}
+
+
 void fmi_build(const char *prefix, dna_fmi *idx, int o_ratio, long ram_use) {
 	/// build .sa5
 	sa_build(prefix, ram_use);
@@ -175,6 +188,13 @@ void fmi_build(const char *prefix, dna_fmi *idx, int o_ratio, long ram_use) {
 	idx->o_len = 4 * (idx->length / o_ratio + 1);
 	idx->o = malloc(idx->o_len * sizeof(uint64_t));
 	_build_o_dna_table(idx->bwt, idx->length, o_ratio, idx->o);
+
+	/// build csa from O, C, BWT
+	printf("Start building CSA\n");
+	idx->csa_ratio = 4;
+    _build_csa(prefix, idx);
+
+
 }
 
 
@@ -214,6 +234,11 @@ void fmi_write(dna_fmi idx, const char *prefix) {
 	fwrite(&idx.length, sizeof(uint64_t), 1, fp);
 	fwrite(idx.bwt, sizeof(char), idx.length, fp);
 
+	/// write csa_ratio, csa_len, csa
+    fwrite(&idx.csa_ratio, sizeof(idx.csa_ratio), 1, fp);
+    fwrite(&idx.csa_len, sizeof(idx.csa_len), 1, fp);
+    fwrite(idx.csa, sizeof(uint64_t), idx.csa_len, fp);
+
 	fclose(fp);
 	free(fname);
 }
@@ -237,6 +262,13 @@ void fmi_read(dna_fmi *idx, const char *prefix) {
 	idx->bwt = malloc(idx->length + 1);
 	fread(idx->bwt, sizeof(char), idx->length, fp);
 	idx->bwt[idx->length] = 0;
+
+
+    /// read csa_ratio, csa_len, csa
+    fread(&idx->csa_ratio, sizeof(idx->csa_ratio), 1, fp);
+    fread(&idx->csa_len, sizeof(idx->csa_len), 1, fp);
+    idx->csa = malloc(idx->csa_len * sizeof(uint64_t));
+    fread(idx->csa, sizeof(uint64_t), idx->csa_len, fp);
 
 	fclose(fp);
 	free(fname);
@@ -278,5 +310,23 @@ uint64_t fmi_aln(const dna_fmi *idx, const char *qry, int len, uint64_t *k,
 	*k = kk;
 	*l = ll;
 	return kk > ll ? 0 : ll - kk + 1;
+}
+
+uint64_t csa_access(dna_fmi *fmi, uint64_t loc) {
+    int ratio = fmi->csa_ratio;
+    int counter = 0;
+    while (loc % ratio != 0) {
+        char c = fmi->bwt[loc];
+        if (c == '$') {
+            return counter;
+        }
+        loc = fmi->c[c] + _occ_access(fmi, c, loc) - 1;
+        counter++;
+        if (counter > 5 * fmi->csa_ratio) {
+            return 0;
+        }
+    }
+
+    return fmi->csa[loc / ratio] + counter;
 }
 
