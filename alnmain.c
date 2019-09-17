@@ -8,6 +8,7 @@
 
 #include "accaln.h"
 #include "alnmain.h"
+#include "chaining/chain.h"
 #include "edlib/edlib.h"
 #include "histo/histo.h"
 #include "kseq.h"
@@ -16,8 +17,8 @@
 
 //#define CHUNK_SIZE 5000
 #define CHUNK_SIZE 500
-#define GE (-2)
-#define EM (2)
+//#define GE (-2)
+//#define EM (2)
 
 const double ERROR_RATE = 0.05;
 typedef uint64_t pos_t;
@@ -25,18 +26,18 @@ typedef uint64_t pos_t;
 typedef struct _paired_end_pos_t {
     pos_t p1, p2;
 } paired_end_pos_t;
-typedef struct _anchor_t {
-    pos_t x, y, w;
-} _anchor_t;
-_anchor_t const _anchor_zero = {0, 0, 0};
-typedef struct _chain_resut {
-    pos_t pos;
-    int score;
-} _chain_result;
+// typedef struct _anchor_t {
+//    pos_t x, y, w;
+//} _anchor_t;
+//_anchor_t const _anchor_zero = {0, 0, 0};
+// typedef struct _chain_resut {
+//    pos_t pos;
+//    int score;
+//} _chain_result;
 
-typedef struct {
-    u32 x, y;
-} _2d_u32;
+// typedef struct {
+//    u32 x, y;
+//} _2d_u32;
 
 #pragma acc routine seq
 
@@ -548,180 +549,236 @@ static inline int single_end(int argc, const char *argv[]) {
     return 0;
 }
 
-int _chain_gap(_anchor_t a, _anchor_t b, int ge) {
-    if (a.w == 0 || b.w == 0) {
-        return 0;
+// int _chain_gap(_anchor_t a, _anchor_t b, int ge) {
+//    if (a.w == 0 || b.w == 0) {
+//        return 0;
+//    }
+//    return (b.x - a.x - a.w) * ge;
+//}
+//
+///**
+// *  Report the id (seed_id, anchor_id) of best anchor which precedes anchor
+// *  Because the gap scores are negative, we are looking for the smallest of
+// its
+// * complementary
+// */
+//_2d_u32 max_gap_score_anchor(_anchor_t anchor, _anchor_t *anchors, u32 thres,
+//                             int seed_id, int *score) {
+//    _2d_u32 id = {0, 0};
+//    _anchor_t(*_anchors)[thres] = (_anchor_t(*)[thres])anchors;
+//    int min_rscore = 0;
+//    for (int sid = 0; sid < seed_id; ++sid) {
+//        for (int anchor_id = 0; anchor_id < thres; ++anchor_id) {
+//            int rscore = -_chain_gap(_anchors[sid][anchor_id], anchor, GE);
+//            if (rscore < min_rscore) {
+//                min_rscore = rscore;
+//                id.x = anchor_id;
+//                id.y = sid;
+//            }
+//        }
+//    }
+//
+//    *score = -min_rscore;
+//    return id;
+//}
+
+//_chain_result chaining(_anchor_t *anchors, u32 thres, int num_seeds) {
+//    typedef struct {
+//        int score;
+//        _2d_u32 id;
+//    } cell;
+//    _chain_result result = {0, 0};
+//    if (num_seeds <= 0) return result;
+//
+//    _anchor_t(*_anchors)[thres] = (_anchor_t(*)[thres])anchors;
+//    /// last 2 columns are used to record the pos of previous best anchor
+//    /// last row is used to store scores for terminate anchor
+//    cell scores[num_seeds + 1][thres + 1];
+//    for (u32 anchor_id = 0; anchor_id < thres; ++anchor_id) {
+//        scores[0][anchor_id].score = _anchors[0][anchor_id].w * EM;
+//        scores[0][anchor_id].id.x = 0;
+//        scores[0][anchor_id].id.y = 0;
+//    }
+//
+//    for (int seed_id = 0; seed_id < num_seeds; ++seed_id) {
+//        for (u32 anchor_id = 0; anchor_id < thres; ++anchor_id) {
+//            scores[seed_id][anchor_id].score =
+//                _anchors[seed_id][anchor_id].w * EM;
+//            int gap_score;
+//            _2d_u32 id =
+//                max_gap_score_anchor(_anchors[seed_id][anchor_id], anchors,
+//                                     thres, seed_id, &gap_score);
+//            scores[seed_id][anchor_id].score += gap_score;
+//            scores[seed_id][anchor_id].id = id;
+//        }
+//    }
+//    int seed_id = num_seeds;
+//    int max_score = INT_MIN;
+//    _2d_u32 mid = {0, 0};
+//    for (u32 anchor_id = 0; anchor_id < thres; ++anchor_id) {
+//        scores[seed_id][anchor_id].score = 0;
+//        int gap_score;
+//        _anchor_t t = {0, 0, 0};
+//        _2d_u32 id =
+//            max_gap_score_anchor(t, anchors, thres, seed_id, &gap_score);
+//        scores[seed_id][anchor_id].score += gap_score;
+//        scores[seed_id][anchor_id].id = id;
+//        if (scores[seed_id][anchor_id].score > max_score) {
+//            max_score = scores[seed_id][anchor_id].score;
+//            mid = id;
+//        }
+//    }
+//
+//    _2d_u32 best = mid;
+//    _2d_u32 last = best;
+//
+//    while (scores[best.y][best.x].id.x != 0 &&
+//           scores[best.y][best.x].id.y != 0) {
+//        last = best;
+//        best = scores[best.y][best.x].id;
+//    }
+//    best = last;
+//    result.pos = _anchors[best.y][best.x].x;
+//    result.score = max_score;
+//
+//    return result;
+//}
+
+void get_anchors(read_t r, int iter, ch_anchor_t *buf[2], int lengths[2],
+                 context const *ctx) {
+    int seed_length = ctx->seed_len;
+    int read_length = r.len;
+    seq_meta smeta;
+    u64 kk = 1, ll = ctx->fmi->length - 1;
+    int rr;
+    lengths[0] = lengths[1] = 0;
+
+    for (int i = iter; i <= read_length - seed_length; i += seed_length) {
+        rr = lc_aln(r.seq.s + i, seed_length, &kk, &ll, ctx->fmi, ctx->lch);
+
+        if (rr > 0 && rr <= ctx->uninformative_thres) {
+            for (u64 j = kk; j <= ll; ++j) {
+                u64 l = sa_access(ctx->prefix, ctx->sa_cache_sz, j);
+                if (seq_lookup(ctx->mta, ctx->mta_len, l, seed_length, &smeta)) {
+                    uint8_t strand = smeta.strand;
+                    buf[strand][lengths[strand]++] = {l, i, seed_length};
+                }
+            }
+        }
     }
-    return (b.x - a.x - a.w) * ge;
 }
 
 /**
- *  Report the id (seed_id, anchor_id) of best anchor which precedes anchor
- *  Because the gap scores are negative, we are looking for the smallest of its
- * complementary
+ * Searching for a pair of reads
+ * 1.   Compute the seeds and the locations from the reads
+ * 2.   Chaining algorithm with both reads ??? gap cost within read, no gap cost
+ *      outside inter-read  ??? Consider 2 sets of anchors ( reads come from
+ *      different strands )
+ * 3.   Define a threshold when we will accept the results, ow, we go to step 1
+ *
+ * @param read1
+ * @param read2
+ * @param ctx
+ * @return
  */
-_2d_u32 max_gap_score_anchor(_anchor_t anchor, _anchor_t *anchors, u32 thres,
-                             int seed_id, int *score) {
-    _2d_u32 id = {0, 0};
-    _anchor_t(*_anchors)[thres] = (_anchor_t(*)[thres])anchors;
-    int min_rscore = 0;
-    for (int sid = 0; sid < seed_id; ++sid) {
-        for (int anchor_id = 0; anchor_id < thres; ++anchor_id) {
-            int rscore = -_chain_gap(_anchors[sid][anchor_id], anchor, GE);
-            if (rscore < min_rscore) {
-                min_rscore = rscore;
-                id.x = anchor_id;
-                id.y = sid;
-            }
-        }
-    }
-
-    *score = -min_rscore;
-    return id;
-}
-
-_chain_result chaining(_anchor_t *anchors, u32 thres, int num_seeds) {
-    typedef struct {
-        int score;
-        _2d_u32 id;
-    } cell;
-    _chain_result result = {0, 0};
-    if (num_seeds <= 0) return result;
-
-    _anchor_t(*_anchors)[thres] = (_anchor_t(*)[thres])anchors;
-    /// last 2 columns are used to record the pos of previous best anchor
-    /// last row is used to store scores for terminate anchor
-    cell scores[num_seeds + 1][thres + 1];
-    for (u32 anchor_id = 0; anchor_id < thres; ++anchor_id) {
-        scores[0][anchor_id].score = _anchors[0][anchor_id].w * EM;
-        scores[0][anchor_id].id.x = 0;
-        scores[0][anchor_id].id.y = 0;
-    }
-
-    for (int seed_id = 0; seed_id < num_seeds; ++seed_id) {
-        for (u32 anchor_id = 0; anchor_id < thres; ++anchor_id) {
-            scores[seed_id][anchor_id].score =
-                _anchors[seed_id][anchor_id].w * EM;
-            int gap_score;
-            _2d_u32 id =
-                max_gap_score_anchor(_anchors[seed_id][anchor_id], anchors,
-                                     thres, seed_id, &gap_score);
-            scores[seed_id][anchor_id].score += gap_score;
-            scores[seed_id][anchor_id].id = id;
-        }
-    }
-    int seed_id = num_seeds;
-    int max_score = INT_MIN;
-    _2d_u32 mid = {0, 0};
-    for (u32 anchor_id = 0; anchor_id < thres; ++anchor_id) {
-        scores[seed_id][anchor_id].score = 0;
-        int gap_score;
-        _anchor_t t = {0, 0, 0};
-        _2d_u32 id =
-            max_gap_score_anchor(t, anchors, thres, seed_id, &gap_score);
-        scores[seed_id][anchor_id].score += gap_score;
-        scores[seed_id][anchor_id].id = id;
-        if (scores[seed_id][anchor_id].score > max_score) {
-            max_score = scores[seed_id][anchor_id].score;
-            mid = id;
-        }
-    }
-
-    _2d_u32 best = mid;
-    _2d_u32 last = best;
-
-    while (scores[best.y][best.x].id.x != 0 &&
-           scores[best.y][best.x].id.y != 0) {
-        last = best;
-        best = scores[best.y][best.x].id;
-    }
-    best = last;
-    result.pos = _anchors[best.y][best.x].x;
-    result.score = max_score;
-
-    return result;
-}
-
 static paired_end_pos_t search_paired_reads(read_t *read1, read_t *read2,
                                             context *ctx) {
     paired_end_pos_t pos;
-    histo *ot_iter_histo = histo_init(ctx->histo_cap);
-    // todo: seed length should be further computed
-    const int sl = ctx->seed_len;
-    //    const int gl = 1;  // todo: gap length should be further computed
+    int seed_length = ctx->seed_len;
 
-    double score = 0;
-    _chain_result results[2];
-    int iter;
+    for (int i = 0; i < seed_length; ++i) {
+        ch_anchor_t buf1[read1->len / seed_length * ctx->uninformative_thres][2];
+        int lengths1[2];
+        get_anchors(*read1, i, buf1, lengths1, ctx);
 
-    /// From minimap2 paper, the anchor is a triple (x, y, w)
-    /// where x is the end pos in reference
-    ///     y is the end pos in read
-    ///     w is the seed length
-    /// we will be using start pos for x and y
-    for (iter = 0; iter < sl; ++iter) {
-        //        histo *in_iter_histo = histo_init(ctx->histo_cap);
-        int num_seeds = (read1->len - iter) / sl;
-        u32 num_anchors = ctx->uninformative_thres * num_seeds;
-        _anchor_t anchors[num_anchors];
-        for (int i = 0; i < num_anchors; ++i) {
-            anchors[i] = _anchor_zero;
-        }
-
-        for (int j = iter; j < read1->len - sl; j += sl) {
-            u64 kk = 1, ll = ctx->fmi->length - 1, rr;
-            rr = lc_aln(read1->seq.s + j, ctx->seed_len, &kk, &ll, ctx->fmi,
-                        ctx->lch);
-            if (rr > 0 && rr < ctx->uninformative_thres) {
-                for (u64 k = kk; k <= ll; ++k) {
-                    u64 l = sa_access(ctx->prefix, ctx->sa_cache_sz, k) - j;
-                    int seed_id = (j - iter) / sl;
-                    int ancho_id = seed_id * ctx->uninformative_thres + ll - kk;
-                    anchors[ancho_id].x = l + j;
-                    anchors[ancho_id].y = j;
-                    /// seed length constant right now, use for future extension
-                    anchors[ancho_id].w = sl;
-                }
-            }
-        }
-
-        results[0] = chaining(anchors, ctx->uninformative_thres, num_seeds);
+        ch_anchor_t buf2[read1->len / seed_length * ctx->uninformative_thres][2];
+        int lengths2[2];
+        get_anchors(*read2, i, buf2, lengths2, ctx);
     }
-    for (iter = 0; iter < sl; ++iter) {
-        //        histo *in_iter_histo = histo_init(ctx->histo_cap);
-        int num_seeds = (read2->len - iter) / sl;
-        u32 num_anchors = ctx->uninformative_thres * num_seeds;
-        _anchor_t anchors[num_anchors];
-        for (int i = 0; i < num_anchors; ++i) {
-            anchors[i] = _anchor_zero;
-        }
-
-        for (int j = iter; j < read2->len - sl; j += sl) {
-            u64 kk = 1, ll = ctx->fmi->length - 1, rr;
-            rr = lc_aln(read2->seq.s + j, ctx->seed_len, &kk, &ll, ctx->fmi,
-                        ctx->lch);
-            if (rr > 0 && rr < ctx->uninformative_thres) {
-                for (u64 k = kk; k <= ll; ++k) {
-                    u64 l = sa_access(ctx->prefix, ctx->sa_cache_sz, k) - j;
-                    int seed_id = (j - iter) / sl;
-                    int ancho_id = seed_id * ctx->uninformative_thres + ll - kk;
-                    anchors[ancho_id].x = l + j;
-                    anchors[ancho_id].y = j;
-                    /// seed length constant right now, use for future extension
-                    anchors[ancho_id].w = sl;
-                }
-            }
-        }
-
-        results[1] = chaining(anchors, ctx->uninformative_thres, num_seeds);
-    }
-
-    /// todo: need to consider both reads in different helix
-    /// need to consider a threshold when we choose to suppress one result and
-    /// choose the other need to consider a secondary chain need to assign a
-    /// score for insert size
-    pos.p1 = results[0].pos;
-    pos.p2 = results[1].pos;
+    //    histo *ot_iter_histo = histo_init(ctx->histo_cap);
+    //    // todo: seed length should be further computed
+    //    const int sl = ctx->seed_len;
+    //    //    const int gl = 1;  // todo: gap length should be further
+    //    computed
+    //
+    //    double score = 0;
+    //    _chain_result results[2];
+    //    int iter;
+    //
+    //    /// From minimap2 paper, the anchor is a triple (x, y, w)
+    //    /// where x is the end pos in reference
+    //    ///     y is the end pos in read
+    //    ///     w is the seed length
+    //    /// we will be using start pos for x and y
+    //    for (iter = 0; iter < sl; ++iter) {
+    //        //        histo *in_iter_histo = histo_init(ctx->histo_cap);
+    //        int num_seeds = (read1->len - iter) / sl;
+    //        u32 num_anchors = ctx->uninformative_thres * num_seeds;
+    //        _anchor_t anchors[num_anchors];
+    //        for (int i = 0; i < num_anchors; ++i) {
+    //            anchors[i] = _anchor_zero;
+    //        }
+    //
+    //        for (int j = iter; j < read1->len - sl; j += sl) {
+    //            u64 kk = 1, ll = ctx->fmi->length - 1, rr;
+    //            rr = lc_aln(read1->seq.s + j, ctx->seed_len, &kk, &ll,
+    //            ctx->fmi,
+    //                        ctx->lch);
+    //            if (rr > 0 && rr < ctx->uninformative_thres) {
+    //                for (u64 k = kk; k <= ll; ++k) {
+    //                    u64 l = sa_access(ctx->prefix, ctx->sa_cache_sz, k) -
+    //                    j; int seed_id = (j - iter) / sl; int ancho_id =
+    //                    seed_id * ctx->uninformative_thres + ll - kk;
+    //                    anchors[ancho_id].x = l + j;
+    //                    anchors[ancho_id].y = j;
+    //                    /// seed length constant right now, use for future
+    //                    extension anchors[ancho_id].w = sl;
+    //                }
+    //            }
+    //        }
+    //
+    //        results[0] = chaining(anchors, ctx->uninformative_thres,
+    //        num_seeds);
+    //    }
+    //    for (iter = 0; iter < sl; ++iter) {
+    //        //        histo *in_iter_histo = histo_init(ctx->histo_cap);
+    //        int num_seeds = (read2->len - iter) / sl;
+    //        u32 num_anchors = ctx->uninformative_thres * num_seeds;
+    //        _anchor_t anchors[num_anchors];
+    //        for (int i = 0; i < num_anchors; ++i) {
+    //            anchors[i] = _anchor_zero;
+    //        }
+    //
+    //        for (int j = iter; j < read2->len - sl; j += sl) {
+    //            u64 kk = 1, ll = ctx->fmi->length - 1, rr;
+    //            rr = lc_aln(read2->seq.s + j, ctx->seed_len, &kk, &ll,
+    //            ctx->fmi,
+    //                        ctx->lch);
+    //            if (rr > 0 && rr < ctx->uninformative_thres) {
+    //                for (u64 k = kk; k <= ll; ++k) {
+    //                    u64 l = sa_access(ctx->prefix, ctx->sa_cache_sz, k) -
+    //                    j; int seed_id = (j - iter) / sl; int ancho_id =
+    //                    seed_id * ctx->uninformative_thres + ll - kk;
+    //                    anchors[ancho_id].x = l + j;
+    //                    anchors[ancho_id].y = j;
+    //                    /// seed length constant right now, use for future
+    //                    extension anchors[ancho_id].w = sl;
+    //                }
+    //            }
+    //        }
+    //
+    //        results[1] = chaining(anchors, ctx->uninformative_thres,
+    //        num_seeds);
+    //    }
+    //
+    //    /// todo: need to consider both reads in different helix
+    //    /// need to consider a threshold when we choose to suppress one result
+    //    and
+    //    /// choose the other need to consider a secondary chain need to assign
+    //    a
+    //    /// score for insert size
+    //    pos.p1 = results[0].pos;
+    //    pos.p2 = results[1].pos;
 
     return pos;
 }
@@ -790,8 +847,8 @@ static inline int pair_end(int argc, const char *argv[]) {
 
             paired_end_pos_t p = search_paired_reads(r1, r2, &ctx);
             int m[2];
-            m[0] = seq_lookup(mta,mta_len, p.p1, r1->len);
-            m[1] = seq_lookup(mta,mta_len, p.p2, r2->len);
+            m[0] = seq_lookup(mta, mta_len, p.p1, r1->len);
+            m[1] = seq_lookup(mta, mta_len, p.p2, r2->len);
         }
 
         free(buf1);
