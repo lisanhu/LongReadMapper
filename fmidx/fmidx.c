@@ -125,6 +125,18 @@ static void _build_c_table(const char *prefix, uint64_t *tab, long ram_use) {
 	free(buf);
 }
 
+inline bool charin(const char *seq, char c) {
+	size_t l = strlen(seq);
+	for (size_t i = 0; i < l; i++)
+	{
+		if (c == seq[i])
+		{
+			return true;
+		}
+		
+	}
+	return false;
+}
 
 static void _build_o_dna_table(const char *bwt, uint64_t length, int ratio, uint64_t *tab) {
 	int mapper[256];
@@ -146,6 +158,11 @@ static void _build_o_dna_table(const char *bwt, uint64_t length, int ratio, uint
 			tab[4 * idx + 3] = tmp[3];
 		}
 		char c = bwt[i];
+		// if (!charin("ACGTacgt", c))
+		// {
+		// 	printf("Invalid character %c %d\n", c, c);
+		// }
+		
 		if (c != '\0' && c != '$') tmp[mapper[c]]++;
 	}
 }
@@ -174,7 +191,9 @@ void fmi_build(const char *prefix, dna_fmi *idx, int o_ratio, long ram_use) {
 	printf("Start building O table\n");
 	idx->o_ratio = o_ratio;
 	idx->o_len = 4 * (idx->length / o_ratio + 1);
+	// printf("Memory required for O table: %llu\n", idx->o_len * sizeof(uint64_t));
 	idx->o = malloc(idx->o_len * sizeof(uint64_t));
+	// printf("Pointer assigned to O: %p\n", idx->o);
 	_build_o_dna_table(idx->bwt, idx->length, o_ratio, idx->o);
 }
 

@@ -49,10 +49,22 @@ static int32_t _dna_rand_ch() {
     return (val >> pos) & 0x3;
 }
 
+inline bool charin(const char *seq, char c) {
+	size_t l = strlen(seq);
+	for (size_t i = 0; i < l; i++)
+	{
+		if (c == seq[i])
+		{
+			return true;
+		}
+		
+	}
+	return false;
+}
 
 static void _dna_replace_n_inplace(char *seq, size_t length) {
 	for (size_t i = 0; i < length; ++i) {
-		if (seq[i] == 'n' || seq[i] == 'N') {
+		if (!charin("GACTgact", seq[i])) {
 			int c = _dna_rand_ch();
 			seq[i] = "ACGT"[c];
 		}

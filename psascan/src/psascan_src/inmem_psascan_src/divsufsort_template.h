@@ -60,7 +60,7 @@ void run_divsufsort(const unsigned char *text, int *sa, int length) {
 
 //template
 void run_divsufsort(const unsigned char *text, long *sa, long length) {
-  divsufsort64(text, sa, length);
+  divsufsort64(text, (saidx64_t*)sa, length);
 }
 
 }  // namespace inmem_psascan_private

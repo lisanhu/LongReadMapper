@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
-find_package(ZLIB REQUIRED)
+# find_package(ZLIB REQUIRED)
 
 add_subdirectory(psascan)
 add_subdirectory(edlib)
@@ -63,17 +63,17 @@ endif()
 
 add_executable(accidx asindex.c mutils.c mutils.h fmidx/fmidx.c
 		fmidx/fmidx.h lchash/lchash.c lchash/lchash.h)
-target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort)
+target_link_libraries(accidx edlib sa_use divsufsort64 divsufsort z)
 
 
 add_executable(accaln accaln.c alnmain.c histo/histo.c mutils.c fmidx/fmidx.c lchash/lchash.c)
-target_link_libraries(accaln mlog edlib sa_use divsufsort64 divsufsort)
+target_link_libraries(accaln mlog edlib sa_use divsufsort64 divsufsort z)
 
-if (ZLIB_FOUND)
-	include_directories(${ZLIB_INCLUDE_DIRS})
-	target_link_libraries(accidx ${ZLIB_LIBRARIES})
-	target_link_libraries(accaln ${ZLIB_LIBRARIES})
-endif (ZLIB_FOUND)
+# if (ZLIB_FOUND)
+# 	include_directories(${ZLIB_INCLUDE_DIRS})
+# 	target_link_libraries(accidx ${ZLIB_LIBRARIES})
+# 	target_link_libraries(accaln ${ZLIB_LIBRARIES})
+# endif (ZLIB_FOUND)
 
 
 #add_executable(test test/play.c logger/logger.c ../mutils.c)
