@@ -1,3 +1,6 @@
 {
-    "cmake.configureOnOpen": true
+    "cmake.configureOnOpen": true,
+    "sync-rsync.sites": [{
+        "remotePath": "caviness:/home/1677/mine/workspace/AccSeqV9"
+    }]
 }
